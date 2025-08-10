@@ -7,6 +7,7 @@ import HeaderStyle from './headerComponents/HeaderStyle'
 
 import Home from '../../../scenes/home'
 import Detail from '../../../scenes/detail'
+import Blank from '../../../scenes/blank'
 
 const Stack = createStackNavigator()
 
@@ -36,6 +37,14 @@ export const HomeNavigator = () => {
               component={Detail}
               options={{ 
                 title: ctx.title,
+                headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
+              }}
+            />
+            <Stack.Screen
+              name="Blank"
+              component={Blank}
+              options={{ 
+                title: '空白页面',
                 headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
               }}
             />

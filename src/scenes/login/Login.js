@@ -50,6 +50,8 @@ export default function Login() {
         alert("User does not exist anymore.")
         return;
       }
+      setSpinner(false)
+      // 登录成功后，Navigation.js会自动切换到RootStack，RootStack会首先显示视频
     } catch(error) {
       setSpinner(false)
       alert(error)

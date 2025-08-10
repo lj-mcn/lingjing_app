@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext, useLayoutEffect } from 'react'
-import { Text, View, ScrollView, StyleSheet } from 'react-native'
+import { Text, View, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native'
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useNavigation } from '@react-navigation/native'
 import IconButton from '../../components/IconButton'
 import ScreenTemplate from '../../components/ScreenTemplate'
@@ -85,44 +86,90 @@ export default function Home() {
     console.log(res)
   }
 
+  const onLeftButtonPress = () => {
+    navigation.navigate('Detail', { userData: userData, from: 'Home', title: 'Left Page' })
+  }
+
+  const onRightButtonPress = () => {
+    navigation.navigate('ModalStacks', {
+      screen: 'Post',
+      params: {
+        data: userData,
+        from: 'Right Button'
+      }
+    })
+  }
+
+  const swipeGesture = Gesture.Pan()
+    .onEnd((event) => {
+      const { translationX, velocityX } = event
+      
+      // 检测左滑手势: 向左滑动超过100像素或速度足够快
+      if (translationX < -100 || velocityX < -500) {
+        navigation.navigate('Blank')
+      }
+    })
+
   return (
     <ScreenTemplate>
-      <ScrollView style={styles.main}>
-        <View style={colorScheme.content}>
-          <Text style={[styles.field, { color: colorScheme.text }]}>Mail:</Text>
-          <Text style={[styles.title, { color: colorScheme.text }]}>{userData.email}</Text>
-          {token ?
-            <>
-              <Text style={[styles.field, { color: colorScheme.text }]}>Expo push token:</Text>
-              <Text style={[styles.title, { color: colorScheme.text }]}>{token.token}</Text>
-            </> : null
-          }
-        </View>
-        <Button
-          label='Go to Detail'
-          color={colors.primary}
-          onPress={() => navigation.navigate('Detail', { userData: userData, from: 'Home', title: userData.email })}
-        />
-        <Button
-          label='Open Modal'
-          color={colors.tertiary}
-          onPress={() => {
-            navigation.navigate('ModalStacks', {
-              screen: 'Post',
-              params: {
-                data: userData,
-                from: 'Home screen'
-              }
-            })
-          }}
-        />
-        <Button
-          label='Send Notification'
-          color={colors.pink}
-          onPress={() => onNotificationPress()}
-          disable={!token}
-        />
-      </ScrollView>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureDetector gesture={swipeGesture}>
+          <View style={{ flex: 1 }}>
+            <ScrollView style={styles.main}>
+              <View style={colorScheme.content}>
+                <Text style={[styles.field, { color: colorScheme.text }]}>Mail:</Text>
+                <Text style={[styles.title, { color: colorScheme.text }]}>{userData.email}</Text>
+                {token ?
+                  <>
+                    <Text style={[styles.field, { color: colorScheme.text }]}>Expo push token:</Text>
+                    <Text style={[styles.title, { color: colorScheme.text }]}>{token.token}</Text>
+                  </> : null
+                }
+              </View>
+              <Button
+                label='Go to Detail'
+                color={colors.primary}
+                onPress={() => navigation.navigate('Detail', { userData: userData, from: 'Home', title: userData.email })}
+              />
+              <Button
+                label='Open Modal'
+                color={colors.tertiary}
+                onPress={() => {
+                  navigation.navigate('ModalStacks', {
+                    screen: 'Post',
+                    params: {
+                      data: userData,
+                      from: 'Home screen'
+                    }
+                  })
+                }}
+              />
+              <Button
+                label='Send Notification'
+                color={colors.pink}
+                onPress={() => onNotificationPress()}
+                disable={!token}
+              />
+              <View style={styles.navigationContainer}>
+                <TouchableOpacity style={styles.navButton} onPress={onLeftButtonPress}>
+                  <Image
+                    source={require('../../../assets/images/左.png')}
+                    style={styles.navImage}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.navButton} onPress={onRightButtonPress}>
+                  <Image
+                    source={require('../../../assets/images/右.png')}
+                    style={styles.navImage}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </GestureDetector>
+      </GestureHandlerRootView>
     </ScreenTemplate>
   )
 }
@@ -156,5 +203,29 @@ const styles = StyleSheet.create({
   field: {
     fontSize: fontSize.middle,
     textAlign: 'center',
+  },
+  navigationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 50,
+    marginTop: 20,
+    marginBottom: 30,
+  },
+  navButton: {
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: colors.lightyellow,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  navImage: {
+    width: 40,
+    height: 40,
   },
 })
