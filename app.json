@@ -2,7 +2,6 @@
   "expo": {
     "name": "expo-github",
     "slug": "expo-github",
-    "privacy": "public",
     "platforms": [
       "ios",
       "android",
@@ -42,16 +41,6 @@
     "web": {
       "favicon": "./assets/images/logo-sm.png",
       "bundler": "metro"
-    },
-    "packagerOpts": {
-      "config": "metro.config.js",
-      "sourceExts": [
-        "js",
-        "jsx",
-        "svg",
-        "ts",
-        "tsx"
-      ]
     },
     "description": "",
     "plugins": [
