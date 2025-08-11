@@ -2,6 +2,7 @@ import React, { useEffect, useContext } from 'react'
 import { Text, View, StyleSheet } from 'react-native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import Button from '../../components/Button'
+import DigitalAvatar from '../../components/DigitalAvatar'
 import { colors, fontSize } from 'theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
 import { UserDataContext } from '../../context/UserDataContext'
@@ -23,10 +24,22 @@ export default function Follow() {
   return (
     <ScreenTemplate>
       <View style={[styles.container]}>
-        <View style={{width:'100%'}}>
-          <Text style={[styles.field, {color: colorScheme.text}]}>Follow Screen</Text>
+        <View style={styles.avatarContainer}>
+          <DigitalAvatar 
+            style={styles.avatar}
+            videoStyle={styles.avatarVideo}
+          />
+          <Text style={[styles.welcomeText, {color: colorScheme.text}]}>
+            欢迎来到连接页面！
+          </Text>
+          <Text style={[styles.avatarName, {color: colorScheme.text}]}>
+            嘎巴龙数字人
+          </Text>
+        </View>
+        
+        <View style={styles.buttonContainer}>
           <Button
-            label='Open Modal'
+            label='互动对话'
             color={colors.tertiary}
             onPress={() => {
               navigation.navigate('ModalStacks', {
@@ -48,11 +61,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    width:'100%'
+    justifyContent: 'space-between',
+    width:'100%',
+    paddingVertical: 40,
   },
-  field: {
+  avatarContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  avatar: {
+    marginBottom: 20,
+  },
+  avatarVideo: {
+    width: 250,
+    height: 350,
+    borderRadius: 20,
+  },
+  welcomeText: {
+    fontSize: fontSize.large,
+    textAlign: 'center',
+    marginBottom: 10,
+    fontWeight: '600',
+  },
+  avatarName: {
     fontSize: fontSize.middle,
     textAlign: 'center',
+    marginBottom: 20,
+    opacity: 0.8,
+  },
+  buttonContainer: {
+    width: '80%',
+    marginBottom: 20,
   },
 })
