@@ -2,12 +2,14 @@ import axios from 'axios';
 
 class STTTTSService {
   constructor() {
+    // 使用模拟模式，不依赖OpenAI
+    this.useSimulation = true;
     this.sttEndpoint = 'https://api.openai.com/v1/audio/transcriptions';
     this.ttsEndpoint = 'https://api.openai.com/v1/audio/speech';
     this.apiKey = '';
     this.sttModel = 'whisper-1';
     this.ttsModel = 'tts-1';
-    this.ttsVoice = 'alloy'; // 可选: alloy, echo, fable, onyx, nova, shimmer
+    this.ttsVoice = 'alloy';
   }
 
   setConfig({ apiKey, sttEndpoint, ttsEndpoint, sttModel, ttsModel, ttsVoice }) {
@@ -158,29 +160,34 @@ class STTTTSService {
     });
   }
 
-  // 检查是否为开发模式
-  isDevelopmentMode() {
-    return !this.apiKey || this.apiKey.trim().length === 0;
+  // 检查是否使用模拟模式
+  isSimulationMode() {
+    return this.useSimulation || !this.apiKey || this.apiKey.trim().length === 0;
   }
 
-  // 智能调用STT（根据是否配置API自动选择真实或模拟）
+  // 智能调用STT（默认使用模拟模式）
   async intelligentSTT(audioUri) {
-    if (this.isDevelopmentMode()) {
-      console.log('使用模拟STT服务');
-      return await this.mockSpeechToText(audioUri);
-    } else {
-      return await this.speechToText(audioUri);
-    }
+    console.log('使用模拟STT服务 - 不依赖OpenAI');
+    return await this.mockSpeechToText(audioUri);
   }
 
-  // 智能调用TTS（根据是否配置API自动选择真实或模拟）
+  // 智能调用TTS（默认使用模拟模式）
   async intelligentTTS(text, options = {}) {
-    if (this.isDevelopmentMode()) {
-      console.log('使用模拟TTS服务');
-      return await this.mockTextToSpeech(text);
-    } else {
-      return await this.textToSpeech(text, options);
-    }
+    console.log('使用模拟TTS服务 - 不依赖OpenAI');
+    return await this.mockTextToSpeech(text);
+  }
+
+  // 启用真实API模式（如果将来需要）
+  enableRealAPI(apiKey) {
+    this.useSimulation = false;
+    this.apiKey = apiKey;
+    console.log('已启用真实STT/TTS API');
+  }
+
+  // 启用模拟模式
+  enableSimulation() {
+    this.useSimulation = true;
+    console.log('已启用模拟STT/TTS服务');
   }
 }
 

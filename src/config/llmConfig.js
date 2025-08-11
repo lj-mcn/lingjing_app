@@ -1,8 +1,8 @@
-// 大模型相关配置
+// 大模型相关配置 (使用我们自己的LLM)
 const llmConfig = {
-  // OpenAI配置
+  // OpenAI配置 (保留结构，但不使用)
   openai: {
-    apiKey: '', // 在生产环境中设置真实的API密钥
+    apiKey: '', // 不使用
     baseURL: 'https://api.openai.com/v1',
     models: {
       chat: 'gpt-3.5-turbo',
@@ -10,12 +10,12 @@ const llmConfig = {
       tts: 'tts-1'
     },
     ttsVoices: {
-      alloy: 'alloy',    // 中性
-      echo: 'echo',      // 男性
-      fable: 'fable',    // 英式男性
-      onyx: 'onyx',      // 深沉男性
-      nova: 'nova',      // 年轻女性
-      shimmer: 'shimmer' // 优雅女性
+      alloy: 'alloy',
+      echo: 'echo',
+      fable: 'fable',
+      onyx: 'onyx',
+      nova: 'nova',
+      shimmer: 'shimmer'
     }
   },
 
@@ -24,6 +24,26 @@ const llmConfig = {
     url: 'ws://localhost:3000/ws',
     reconnectAttempts: 5,
     reconnectDelay: 1000
+  },
+
+  // Response LLM配置 (使用我们自己的大模型)
+  responseLLM: {
+    // 远程大模型服务器配置 
+    websocketUrl: 'ws://10.91.225.137:8000', // 你同学的电脑IP (直接配置，不依赖环境变量)
+    timeout: 60000, // 增加超时时间以应对网络延迟
+    model: 'Qwen2.5-1.5B-Instruct',
+    maxTokens: 512,
+    
+    // 网络配置
+    reconnectAttempts: 10,
+    reconnectDelay: 3000,
+    heartbeatInterval: 30000, // 心跳检测间隔
+    
+    // 备用服务器配置（可选）
+    fallbackServers: [
+      'ws://192.168.1.101:8000',
+      'ws://192.168.1.102:8000'
+    ]
   },
 
   // 嘎巴龙数字人个性配置
@@ -69,9 +89,54 @@ const llmConfig = {
 
   // 开发模式配置
   development: {
-    useMockServices: true, // 是否使用模拟服务
-    enableDebugLogs: true, // 是否启用调试日志
+    useMockServices: process.env.USE_MOCK_SERVICES === 'true' || false, // 是否使用模拟服务
+    enableDebugLogs: process.env.ENABLE_DEBUG_LOGS === 'true' || true, // 是否启用调试日志
     mockResponseDelay: 1000, // 模拟响应延迟（毫秒）
+  },
+
+  // 配置验证 (仅使用我们自己的LLM)
+  validateConfig() {
+    const errors = [];
+    const warnings = [];
+    
+    // 检查自己的LLM配置
+    if (!this.responseLLM.websocketUrl) {
+      errors.push('缺少LLM服务器地址 - 请设置LLM_SERVER_URL环境变量');
+    }
+    
+    // 检查网络连通性提示
+    if (this.responseLLM.websocketUrl) {
+      if (this.responseLLM.websocketUrl.includes('192.168') || this.responseLLM.websocketUrl.includes('10.91')) {
+        warnings.push('使用内网IP地址，请确保两台电脑在同一网络中');
+      }
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings
+    };
+  },
+
+  // 获取当前环境配置
+  getEnvironmentConfig() {
+    return {
+      // 我们自己的LLM配置
+      llmServer: {
+        serverUrl: this.responseLLM.websocketUrl,
+        isConfigured: !!this.responseLLM.websocketUrl,
+        model: this.responseLLM.model,
+        timeout: this.responseLLM.timeout,
+        maxTokens: this.responseLLM.maxTokens
+      },
+      
+      // 开发配置
+      isDevelopment: this.development.useMockServices,
+      debugEnabled: this.development.enableDebugLogs,
+      
+      // 嘎巴龙个性配置
+      personality: this.gabalong.personality.name
+    };
   },
 
   // 音频配置

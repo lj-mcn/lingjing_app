@@ -1,8 +1,9 @@
 import React, { useEffect, useContext, useState } from 'react'
-import { Text, View, StyleSheet, ScrollView, TextInput } from 'react-native'
+import { Text, View, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import Button from '../../components/Button'
 import DigitalAvatar from '../../components/DigitalAvatar'
+import ConfigTester from '../../components/ConfigTester'
 import digitalHumanService from '../../services/DigitalHumanService'
 import { colors, fontSize } from 'theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
@@ -22,6 +23,7 @@ export default function Follow() {
 
   const [messages, setMessages] = useState([])
   const [inputText, setInputText] = useState('')
+  const [showConfigTester, setShowConfigTester] = useState(false)
 
   useEffect(() => {
     console.log('Follow screen - Connect with Gabalong')
@@ -49,6 +51,11 @@ export default function Follow() {
       <View style={[styles.container]}>
         {/* 数字人头部区域 */}
         <View style={styles.avatarContainer}>
+          {/* 背景装饰 */}
+          <View style={[styles.backgroundDecoration, {
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'
+          }]} />
+          
           <DigitalAvatar 
             style={styles.avatar}
             videoStyle={styles.avatarVideo}
@@ -61,6 +68,14 @@ export default function Follow() {
           <Text style={[styles.avatarName, {color: colorScheme.text}]}>
             点击我开始语音对话，或在下方输入文字
           </Text>
+          
+          {/* 测试按钮 */}
+          <TouchableOpacity 
+            style={styles.testButton}
+            onPress={() => setShowConfigTester(true)}
+          >
+            <Text style={styles.testButtonText}>🧪 测试服务连接</Text>
+          </TouchableOpacity>
         </View>
         
         {/* 对话历史区域 */}
@@ -112,6 +127,11 @@ export default function Follow() {
             style={styles.sendButton}
           />
         </View>
+        
+        {/* 配置测试器 */}
+        {showConfigTester && (
+          <ConfigTester onClose={() => setShowConfigTester(false)} />
+        )}
       </View>
     </ScreenTemplate>
   )
@@ -127,9 +147,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 20,
+    position: 'relative',
   },
   avatar: {
     marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
   },
   avatarVideo: {
     width: 200,
@@ -200,5 +229,28 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     minWidth: 60,
+  },
+  backgroundDecoration: {
+    position: 'absolute',
+    width: 280,
+    height: 360,
+    borderRadius: 30,
+    zIndex: -1,
+    opacity: 0.3,
+  },
+  testButton: {
+    marginTop: 15,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderColor: '#007AFF',
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  testButtonText: {
+    color: '#007AFF',
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 })

@@ -1,6 +1,6 @@
 import webSocketService from './WebSocketService';
 import audioService from './AudioService';
-import llmService from './LLMService';
+import responseLLMService from './ResponseLLMService';
 import sttTtsService from './STTTTSService';
 
 class DigitalHumanService {
@@ -42,24 +42,45 @@ class DigitalHumanService {
 
   async initialize(config = {}) {
     try {
+      console.log('开始初始化数字人服务...');
+      
       // 配置各个服务
+      console.log('初始化ResponseLLM服务...');
       if (config.llm) {
-        llmService.setConfig(config.llm);
+        const llmInitialized = await responseLLMService.initialize(config.llm);
+        if (!llmInitialized) {
+          console.warn('ResponseLLM服务初始化失败，但继续初始化其他服务');
+        }
+      } else {
+        const llmInitialized = await responseLLMService.initialize();
+        if (!llmInitialized) {
+          console.warn('ResponseLLM服务初始化失败，但继续初始化其他服务');
+        }
       }
       
+      console.log('配置STT/TTS服务...');
       if (config.sttTts) {
         sttTtsService.setConfig(config.sttTts);
       }
 
-      // 初始化音频服务
-      const audioInitialized = await audioService.initializeAudio();
-      if (!audioInitialized) {
-        throw new Error('音频服务初始化失败');
+      console.log('初始化音频服务...');
+      // 音频服务初始化失败不应该阻止整个服务
+      try {
+        const audioInitialized = await audioService.initializeAudio();
+        if (!audioInitialized) {
+          console.warn('音频服务初始化失败，但继续初始化');
+        }
+      } catch (audioError) {
+        console.warn('音频服务初始化失败:', audioError.message);
       }
 
       // 连接WebSocket（如果提供了URL）
       if (config.websocketUrl) {
-        webSocketService.connect(config.websocketUrl);
+        try {
+          webSocketService.connect(config.websocketUrl);
+        } catch (wsError) {
+          console.warn('WebSocket连接失败:', wsError.message);
+        }
       }
 
       console.log('数字人服务初始化完成');
@@ -123,7 +144,7 @@ class DigitalHumanService {
       this.notifyMessage('user', sttResult.text);
 
       // 发送给大模型
-      const llmResult = await llmService.sendMessage(sttResult.text);
+      const llmResult = await responseLLMService.sendMessage(sttResult.text);
       if (!llmResult.success) {
         throw new Error('大模型响应失败: ' + llmResult.error);
       }
@@ -165,7 +186,7 @@ class DigitalHumanService {
       this.notifyMessage('user', text);
 
       // 发送给大模型
-      const llmResult = await llmService.sendMessage(text);
+      const llmResult = await responseLLMService.sendMessage(text);
       if (!llmResult.success) {
         throw new Error('大模型响应失败: ' + llmResult.error);
       }
@@ -297,7 +318,7 @@ class DigitalHumanService {
       this.isConversing = false;
       await audioService.cleanup();
       webSocketService.disconnect();
-      llmService.clearHistory();
+      responseLLMService.cleanup();
       console.log('数字人服务清理完成');
     } catch (error) {
       console.error('数字人服务清理失败:', error);

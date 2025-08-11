@@ -32,20 +32,48 @@ export default function DigitalAvatar({
 
   const initializeDigitalHuman = async () => {
     try {
-      // 配置数字人服务（开发模式，使用模拟服务）
+      console.log('开始初始化数字人...');
+      
+      // 导入配置
+      const llmConfig = await import('../config/llmConfig.js').then(m => m.default);
+      console.log('LLM配置加载完成');
+      
+      // 验证配置
+      const configValidation = llmConfig.validateConfig();
+      console.log('配置验证结果:', configValidation);
+      
+      if (!configValidation.isValid) {
+        console.error('配置验证失败:', configValidation.errors);
+        alert('配置错误:\n' + configValidation.errors.join('\n'));
+        return;
+      }
+      
+      if (configValidation.warnings && configValidation.warnings.length > 0) {
+        console.warn('配置警告:', configValidation.warnings);
+      }
+
+      // 配置数字人服务（使用我们自己的LLM）
       const config = {
         llm: {
-          // 在生产环境中配置真实的API密钥
-          // apiKey: 'your-openai-api-key'
+          websocketUrl: llmConfig.responseLLM.websocketUrl,
+          timeout: llmConfig.responseLLM.timeout,
+          maxTokens: llmConfig.responseLLM.maxTokens,
+          model: llmConfig.responseLLM.model
         },
         sttTts: {
-          // 在生产环境中配置真实的API密钥
-          // apiKey: 'your-openai-api-key'
+          useSimulation: true // 使用模拟模式，不依赖外部API
         }
       }
 
+      console.log('环境配置:', llmConfig.getEnvironmentConfig())
+      console.log('初始化配置:', config)
+
+      console.log('开始调用digitalHumanService.initialize...')
       const initialized = await digitalHumanService.initialize(config)
+      console.log('初始化结果:', initialized)
+      
       if (initialized) {
+        console.log('数字人服务初始化成功!');
         setIsInitialized(true)
         
         // 设置回调函数
@@ -129,7 +157,7 @@ export default function DigitalAvatar({
           style={[styles.video, videoStyle]}
           source={require('../../assets/images/嘎巴龙待机.mp4')}
           useNativeControls={showControls}
-          resizeMode="contain"
+          resizeMode="cover"
           isLooping={loop}
           shouldPlay={autoPlay}
         />
@@ -157,10 +185,16 @@ const styles = StyleSheet.create({
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backdropFilter: 'blur(10px)',
   },
   video: {
     width: 200,
     height: 300,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
   },
   statusIndicator: {
     position: 'absolute',
