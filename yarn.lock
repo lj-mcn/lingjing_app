@@ -5423,7 +5423,7 @@ expo-eas-client@~0.14.4:
   resolved "https://registry.npmjs.org/expo-eas-client/-/expo-eas-client-0.14.4.tgz"
   integrity sha512-TSL1BbBFIuXchJmPgbPnB7cGpOOuSGJcQ/L7gij/+zPjExwvKm5ckA5dlSulwoFhH8zQt4vb7bfISPSAWQVWBw==
 
-expo-file-system@~18.1.11:
+expo-file-system@~18.1.11, expo-file-system@~18.1.4:
   version "18.1.11"
   resolved "https://registry.npmjs.org/expo-file-system/-/expo-file-system-18.1.11.tgz"
   integrity sha512-HJw/m0nVOKeqeRjPjGdvm+zBi5/NxcdPf8M8P3G2JFvH5Z8vBWqVDic2O58jnT1OFEy0XXzoH9UqFu7cHg9DTQ==
