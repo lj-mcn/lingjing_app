@@ -1,13 +1,17 @@
-import React, { useEffect, useState, useContext, useLayoutEffect } from 'react'
-import { Text, View, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native'
+import React, {
+  useEffect, useState, useContext, useLayoutEffect,
+} from 'react'
+import {
+  Text, View, ScrollView, StyleSheet, TouchableOpacity, Image,
+} from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useNavigation } from '@react-navigation/native'
+import { doc, onSnapshot } from 'firebase/firestore'
 import IconButton from '../../components/IconButton'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import Button from '../../components/Button'
 import MenuOverlay from '../../components/MenuOverlay'
 import { firestore } from '../../firebase/config'
-import { doc, onSnapshot } from 'firebase/firestore';
 import { colors, fontSize } from '../../theme'
 import { UserDataContext } from '../../context/UserDataContext'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
@@ -24,14 +28,14 @@ export default function Home() {
   const { resetAppFlow } = useAppFlow()
   const isDark = scheme === 'dark'
   const colorScheme = {
-    content: isDark? styles.darkContent : styles.lightContent,
-    text: isDark? colors.white : colors.primaryText
+    content: isDark ? styles.darkContent : styles.lightContent,
+    text: isDark ? colors.white : colors.primaryText,
   }
 
   useEffect(() => {
-    const str = "Hello, こんにちは!";
-    const kilobyteSize = getKilobyteSize({str: str});
-    console.log({str, kilobyteSize});
+    const str = 'Hello, こんにちは!'
+    const kilobyteSize = getKilobyteSize({ str })
+    console.log({ str, kilobyteSize })
   }, [])
 
   useEffect(() => {
@@ -39,14 +43,14 @@ export default function Home() {
       name: 'name1',
       age: 15,
     }
-    const kilobyteSize = getKilobyteSize({str: obj});
-    console.log({obj, kilobyteSize});
+    const kilobyteSize = getKilobyteSize({ str: obj })
+    console.log({ obj, kilobyteSize })
   }, [])
 
   useEffect(() => {
     const array = ['name1', 'name2', 'name3']
-    const kilobyteSize = getKilobyteSize({str: array});
-    console.log({array, kilobyteSize});
+    const kilobyteSize = getKilobyteSize({ str: array })
+    console.log({ array, kilobyteSize })
   }, [])
 
   useLayoutEffect(() => {
@@ -69,11 +73,11 @@ export default function Home() {
           color={colors.lightPurple}
           size={24}
           onPress={() => headerButtonPress()}
-          containerStyle={{paddingRight: 15}}
+          containerStyle={{ paddingRight: 15 }}
         />
       ),
-    });
-  }, [navigation]);
+    })
+  }, [navigation])
 
   const headerButtonPress = () => {
     alert('Tapped header button')
@@ -85,24 +89,24 @@ export default function Home() {
   }
 
   useEffect(() => {
-    const tokensRef = doc(firestore, 'tokens', userData.id);
+    const tokensRef = doc(firestore, 'tokens', userData.id)
     const tokenListner = onSnapshot(tokensRef, (querySnapshot) => {
       if (querySnapshot.exists) {
         const data = querySnapshot.data()
         setToken(data)
       } else {
-        console.log("No such document!");
+        console.log('No such document!')
       }
     })
     return () => tokenListner()
   }, [])
 
-  const onNotificationPress = async() => {
+  const onNotificationPress = async () => {
     const res = await sendNotification({
       title: 'Hello',
       body: 'This is some something 👋',
       data: 'something data',
-      token: token.token
+      token: token.token,
     })
     console.log(res)
   }
@@ -118,7 +122,7 @@ export default function Home() {
   const swipeGesture = Gesture.Pan()
     .onEnd((event) => {
       const { translationX, velocityX } = event
-      
+
       // 检测左滑手势: 向左滑动超过100像素或速度足够快
       if (translationX < -100 || velocityX < -500) {
         navigation.navigate('Voice')
@@ -138,33 +142,34 @@ export default function Home() {
               <View style={colorScheme.content}>
                 <Text style={[styles.field, { color: colorScheme.text }]}>Mail:</Text>
                 <Text style={[styles.title, { color: colorScheme.text }]}>{userData.email}</Text>
-                {token ?
-                  <>
-                    <Text style={[styles.field, { color: colorScheme.text }]}>Expo push token:</Text>
-                    <Text style={[styles.title, { color: colorScheme.text }]}>{token.token}</Text>
-                  </> : null
-                }
+                {token
+                  ? (
+                    <>
+                      <Text style={[styles.field, { color: colorScheme.text }]}>Expo push token:</Text>
+                      <Text style={[styles.title, { color: colorScheme.text }]}>{token.token}</Text>
+                    </>
+                  ) : null}
               </View>
               <Button
-                label='Go to Detail'
+                label="Go to Detail"
                 color={colors.primary}
-                onPress={() => navigation.navigate('Detail', { userData: userData, from: 'Home', title: userData.email })}
+                onPress={() => navigation.navigate('Detail', { userData, from: 'Home', title: userData.email })}
               />
               <Button
-                label='Open Modal'
+                label="Open Modal"
                 color={colors.tertiary}
                 onPress={() => {
                   navigation.navigate('ModalStacks', {
                     screen: 'Post',
                     params: {
                       data: userData,
-                      from: 'Home screen'
-                    }
+                      from: 'Home screen',
+                    },
                   })
                 }}
               />
               <Button
-                label='Send Notification'
+                label="Send Notification"
                 color={colors.pink}
                 onPress={() => onNotificationPress()}
                 disable={!token}
@@ -225,7 +230,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.xxxLarge,
     marginBottom: 20,
-    textAlign: 'center'
+    textAlign: 'center',
   },
   field: {
     fontSize: fontSize.middle,

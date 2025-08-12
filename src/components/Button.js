@@ -1,11 +1,15 @@
-import React from "react";
-import { StyleSheet, TouchableOpacity, Text, View } from "react-native";
-import { fontSize, colors } from "../theme";
+import React from 'react'
+import {
+  StyleSheet, TouchableOpacity, Text, View,
+} from 'react-native'
+import { fontSize, colors } from '../theme'
 
 export default function Button(props) {
-  const { label, onPress, color, disable } = props
+  const {
+    label, onPress, color, disable,
+  } = props
 
-  if(disable) {
+  if (disable) {
     return (
       <View
         style={[styles.button, { backgroundColor: color, opacity: 0.3 }]}
@@ -14,7 +18,7 @@ export default function Button(props) {
       </View>
     )
   }
-  
+
   return (
     <TouchableOpacity
       style={[styles.button, { backgroundColor: color }]}
@@ -32,11 +36,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     height: 48,
     borderRadius: 5,
-    alignItems: "center",
-    justifyContent: 'center'
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonText: {
     color: colors.white,
-    fontSize: fontSize.large
+    fontSize: fontSize.large,
   },
 })

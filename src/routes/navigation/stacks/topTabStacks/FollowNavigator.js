@@ -5,17 +5,15 @@ import Follow from '../../../../scenes/follow'
 
 const Stack = createStackNavigator()
 
-export const FollowNavigator = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={({ route, navigation }) => ({
-        headerShown: false,
-      })}
-    >
-      <Stack.Screen
-        name="Follow"
-        component={Follow}
-      />
-    </Stack.Navigator>
-  )
-}
+export const FollowNavigator = () => (
+  <Stack.Navigator
+    screenOptions={({ route, navigation }) => ({
+      headerShown: false,
+    })}
+  >
+    <Stack.Screen
+      name="Follow"
+      component={Follow}
+    />
+  </Stack.Navigator>
+)

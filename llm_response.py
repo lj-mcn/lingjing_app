@@ -67,7 +67,7 @@ class LLMResponseData:
     """LLM响应数据结构"""
     success: bool
     message: str
-    request_id: Union[str, int]
+    requestId: Union[str, int]  # 统一使用camelCase与WebSocket消息格式一致
     timestamp: float
     error: Optional[str] = None
     model_info: Optional[Dict[str, Any]] = None
@@ -422,7 +422,7 @@ class LLMResponseInterface:
                     response_data = LLMResponseData(
                         success=data.get("success", False),
                         message=data.get("message", ""),
-                        request_id=request_id,
+                        requestId=request_id,
                         timestamp=data.get("timestamp", time.time()),
                         error=data.get("error"),
                         model_info=data.get("modelInfo"),

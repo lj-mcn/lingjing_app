@@ -1,11 +1,15 @@
 import React, { useEffect, useContext, useState } from 'react'
-import { Text, View, StyleSheet, ScrollView, FlatList, TouchableOpacity } from 'react-native'
+import {
+  Text, View, StyleSheet, ScrollView, TextInput, TouchableOpacity,
+} from 'react-native'
+import { colors, fontSize } from 'theme'
+import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import Button from '../../components/Button'
-import { colors, fontSize } from 'theme'
+import DigitalAvatar from '../../components/DigitalAvatar'
+import digitalHumanService from '../../services/DigitalHumanService'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
 import { UserDataContext } from '../../context/UserDataContext'
-import { useNavigation } from '@react-navigation/native'
 
 export default function Follow() {
   const navigation = useNavigation()
@@ -13,106 +17,114 @@ export default function Follow() {
   const { scheme } = useContext(ColorSchemeContext)
   const isDark = scheme === 'dark'
   const colorScheme = {
-    text: isDark? colors.white : colors.primaryText,
-    background: isDark? colors.black : colors.white,
-    cardBackground: isDark? '#333' : '#f8f9fa'
+    text: isDark ? colors.white : colors.primaryText,
+    background: isDark ? colors.black : colors.white,
+    inputBackground: isDark ? '#333' : '#f5f5f5',
   }
 
-  const [followingList, setFollowingList] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [messages, setMessages] = useState([])
+  const [inputText, setInputText] = useState('')
 
   useEffect(() => {
     console.log('Follow screen - 关注列表')
-    loadFollowingList()
   }, [])
 
-  const loadFollowingList = async () => {
-    setLoading(true)
-    try {
-      // 这里应该从服务器获取关注列表
-      // 暂时使用模拟数据
-      const mockData = [
-        { id: 1, name: '张三', email: 'zhangsan@example.com', avatar: '👤' },
-        { id: 2, name: '李四', email: 'lisi@example.com', avatar: '👤' },
-        { id: 3, name: '王五', email: 'wangwu@example.com', avatar: '👤' },
-      ]
-      setFollowingList(mockData)
-    } catch (error) {
-      console.error('加载关注列表失败:', error)
-    } finally {
-      setLoading(false)
+  const handleMessage = (message) => {
+    setMessages((prev) => [...prev, message])
+  }
+
+  const handleSendText = async () => {
+    if (inputText.trim().length === 0) return
+
+    const userMessage = inputText.trim()
+    setInputText('')
+
+    // 发送文本消息
+    const result = await digitalHumanService.sendTextMessage(userMessage)
+    if (!result.success) {
+      console.error('发送消息失败:', result.error)
     }
   }
 
-  const handleUnfollow = (userId) => {
-    // 取消关注逻辑
-    setFollowingList(prev => prev.filter(user => user.id !== userId))
-  }
-
-  const renderFollowItem = ({ item }) => (
-    <View style={[styles.followItem, { backgroundColor: colorScheme.cardBackground }]}>
-      <View style={styles.userInfo}>
-        <Text style={styles.userAvatar}>{item.avatar}</Text>
-        <View style={styles.userDetails}>
-          <Text style={[styles.userName, { color: colorScheme.text }]}>{item.name}</Text>
-          <Text style={[styles.userEmail, { color: colorScheme.text }]}>{item.email}</Text>
-        </View>
-      </View>
-      <TouchableOpacity
-        style={styles.unfollowButton}
-        onPress={() => handleUnfollow(item.id)}
-      >
-        <Text style={styles.unfollowButtonText}>取消关注</Text>
-      </TouchableOpacity>
-    </View>
-  )
-
   return (
     <ScreenTemplate>
-      <View style={styles.container}>
-        {/* 头部标题 */}
-        <View style={styles.headerContainer}>
-          <Text style={[styles.title, { color: colorScheme.text }]}>
-            👥 我的关注
+      <View style={[styles.container]}>
+        {/* 数字人头部区域 */}
+        <View style={styles.avatarContainer}>
+          {/* 背景装饰 */}
+          <View style={[styles.backgroundDecoration, {
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+          }]}
+          />
+
+          <DigitalAvatar
+            style={styles.avatar}
+            videoStyle={styles.avatarVideo}
+            onMessage={handleMessage}
+            enableInteraction
+          />
+          <Text style={[styles.welcomeText, { color: colorScheme.text }]}>
+            你好！我是嘎巴龙 🐉
           </Text>
-          <Text style={[styles.subtitle, { color: colorScheme.text }]}>
-            关注了 {followingList.length} 个用户
+          <Text style={[styles.avatarName, { color: colorScheme.text }]}>
+            点击我开始语音对话，或在下方输入文字
           </Text>
+
         </View>
 
-        {/* 关注列表 */}
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={[styles.loadingText, { color: colorScheme.text }]}>
-              加载中...
-            </Text>
-          </View>
-        ) : followingList.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colorScheme.text }]}>
-              😔 还没有关注任何人
-            </Text>
-            <Text style={[styles.emptySubtext, { color: colorScheme.text }]}>
-              去发现一些有趣的人吧！
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={followingList}
-            renderItem={renderFollowItem}
-            keyExtractor={(item) => item.id.toString()}
-            style={styles.followList}
+        {/* 对话历史区域 */}
+        <View style={styles.chatContainer}>
+          <ScrollView
+            style={[styles.messagesContainer, { backgroundColor: colorScheme.inputBackground }]}
             showsVerticalScrollIndicator={false}
-          />
-        )}
+          >
+            {messages.length === 0 ? (
+              <Text style={[styles.emptyText, { color: colorScheme.text }]}>
+                开始和嘎巴龙聊天吧！✨
+              </Text>
+            ) : (
+              messages.map((msg, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.messageItem,
+                    msg.role === 'user' ? styles.userMessage : styles.assistantMessage,
+                  ]}
+                >
+                  <Text style={[
+                    styles.messageText,
+                    { color: msg.role === 'user' ? colors.white : colorScheme.text },
+                  ]}
+                  >
+                    {msg.role === 'user' ? '我：' : '嘎巴龙：'}{msg.message}
+                  </Text>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </View>
 
-        {/* 刷新按钮 */}
-        <TouchableOpacity
-          style={styles.refreshButton}
-          onPress={loadFollowingList}
-        >
-          <Text style={styles.refreshButtonText}>🔄 刷新列表</Text>
-        </TouchableOpacity>
+        {/* 文本输入区域 */}
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={[styles.textInput, {
+              backgroundColor: colorScheme.inputBackground,
+              color: colorScheme.text,
+            }]}
+            placeholder="输入消息..."
+            placeholderTextColor={isDark ? '#999' : '#666'}
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={500}
+          />
+          <Button
+            label="发送"
+            color={colors.tertiary}
+            onPress={handleSendText}
+            style={styles.sendButton}
+          />
+        </View>
       </View>
     </ScreenTemplate>
   )
@@ -121,114 +133,100 @@ export default function Follow() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    width: '100%',
+    paddingVertical: 20,
   },
-  headerContainer: {
+  avatarContainer: {
     alignItems: 'center',
-    marginBottom: 30,
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+    position: 'relative',
   },
-  title: {
-    fontSize: fontSize.xLarge,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: fontSize.middle,
-    opacity: 0.8,
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: fontSize.large,
-    fontWeight: '500',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  emptyText: {
-    fontSize: fontSize.large,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  emptySubtext: {
-    fontSize: fontSize.middle,
-    textAlign: 'center',
-    opacity: 0.7,
-  },
-  followList: {
-    flex: 1,
+  avatar: {
+    width: 200,
+    height: 260,
+    borderRadius: 20,
+    overflow: 'hidden',
     marginBottom: 20,
   },
-  followItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 3,
+  avatarVideo: {
+    width: '100%',
+    height: '100%',
   },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  userAvatar: {
-    fontSize: 32,
-    marginRight: 15,
-  },
-  userDetails: {
-    flex: 1,
-  },
-  userName: {
+  welcomeText: {
     fontSize: fontSize.large,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
   },
-  userEmail: {
-    fontSize: fontSize.small,
-    opacity: 0.7,
-  },
-  unfollowButton: {
-    backgroundColor: '#ff4757',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  unfollowButtonText: {
-    color: colors.white,
-    fontSize: fontSize.small,
-    fontWeight: '500',
-  },
-  refreshButton: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    borderColor: '#007AFF',
-    borderWidth: 1,
-    borderRadius: 25,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    alignSelf: 'center',
-  },
-  refreshButtonText: {
-    color: '#007AFF',
+  avatarName: {
     fontSize: fontSize.middle,
     textAlign: 'center',
-    fontWeight: '500',
+    opacity: 0.8,
+    marginBottom: 20,
+  },
+  chatContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  messagesContainer: {
+    flex: 1,
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 15,
+    maxHeight: 300,
+  },
+  emptyText: {
+    fontSize: fontSize.middle,
+    textAlign: 'center',
+    opacity: 0.7,
+    fontStyle: 'italic',
+    marginTop: 20,
+  },
+  messageItem: {
+    marginVertical: 5,
+    padding: 10,
+    borderRadius: 10,
+    maxWidth: '85%',
+  },
+  userMessage: {
+    backgroundColor: colors.tertiary,
+    alignSelf: 'flex-end',
+  },
+  assistantMessage: {
+    backgroundColor: 'rgba(100, 100, 100, 0.1)',
+    alignSelf: 'flex-start',
+  },
+  messageText: {
+    fontSize: fontSize.small,
+    lineHeight: 20,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    alignItems: 'flex-end',
+    gap: 10,
+  },
+  textInput: {
+    flex: 1,
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: fontSize.small,
+    minHeight: 45,
+    maxHeight: 120,
+  },
+  sendButton: {
+    minWidth: 70,
+    paddingVertical: 12,
+  },
+  backgroundDecoration: {
+    position: 'absolute',
+    width: 280,
+    height: 360,
+    borderRadius: 30,
+    zIndex: -1,
+    opacity: 0.3,
   },
 })

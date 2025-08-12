@@ -11,9 +11,9 @@ export default function Follower() {
   const { scheme } = useContext(ColorSchemeContext)
   const isDark = scheme === 'dark'
   const colorScheme = {
-    text: isDark? colors.white : colors.primaryText,
-    background: isDark? colors.black : colors.white,
-    cardBackground: isDark? '#333' : '#f8f9fa'
+    text: isDark ? colors.white : colors.primaryText,
+    background: isDark ? colors.black : colors.white,
+    cardBackground: isDark ? '#333' : '#f8f9fa'
   }
 
   const [followerList, setFollowerList] = useState([])

@@ -15,7 +15,7 @@ const Stack = createStackNavigator()
 
 export const HomeNavigator = () => {
   const { scheme } = useContext(ColorSchemeContext)
-  const navigationProps = scheme === 'dark' ? darkProps:lightProps
+  const navigationProps = scheme === 'dark' ? darkProps : lightProps
   const [title, setTitle] = useState('default title')
   return (
     <HomeTitleContext.Provider
@@ -31,23 +31,23 @@ export const HomeNavigator = () => {
               name="Home"
               component={Home}
               options={({ navigation }) => ({
-                headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
+                headerBackground: scheme === 'dark' ? null : () => <HeaderStyle />,
               })}
             />
             <Stack.Screen
               name="Detail"
               component={Detail}
-              options={{ 
+              options={{
                 title: ctx.title,
-                headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
+                headerBackground: scheme === 'dark' ? null : () => <HeaderStyle />,
               }}
             />
             <Stack.Screen
               name="Blank"
               component={Blank}
-              options={{ 
+              options={{
                 title: '空白页面',
-                headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
+                headerBackground: scheme === 'dark' ? null : () => <HeaderStyle />,
               }}
             />
             <Stack.Screen
@@ -67,7 +67,7 @@ export const HomeNavigator = () => {
               }}
             />
           </Stack.Navigator>
-      )}
+        )}
       </HomeTitleContext.Consumer>
     </HomeTitleContext.Provider>
   )

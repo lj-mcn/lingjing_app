@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { View } from 'react-native'
 import 'utils/ignore'
+import { imageAssets } from 'theme/images'
+import { fontAssets } from 'theme/fonts'
 import { ColorSchemeContextProvider } from './context/ColorSchemeContext'
 import { UserDataContextProvider } from './context/UserDataContext'
 import { AppContextProvider } from './context/AppContext'
 import { AppFlowProvider } from './context/AppFlowContext'
 
 // assets
-import { imageAssets } from 'theme/images'
-import { fontAssets } from 'theme/fonts'
 import Router from './routes'
 
-const isHermes = () => !!global.HermesInternal;
+const isHermes = () => !!global.HermesInternal
 
 const App = () => {
   // state

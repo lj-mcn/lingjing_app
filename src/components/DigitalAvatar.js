@@ -1,18 +1,20 @@
 import React, { useRef, useEffect, useState } from 'react'
-import { View, StyleSheet, Dimensions, TouchableOpacity, Text } from 'react-native'
+import {
+  View, StyleSheet, Dimensions, TouchableOpacity, Text,
+} from 'react-native'
 import { Video } from 'expo-av'
 import digitalHumanService from '../services/DigitalHumanService'
 
 const { width, height } = Dimensions.get('window')
 
-export default function DigitalAvatar({ 
-  style, 
-  videoStyle, 
-  autoPlay = true, 
+export default function DigitalAvatar({
+  style,
+  videoStyle,
+  autoPlay = true,
   loop = true,
   showControls = false,
   enableInteraction = true,
-  onMessage = null
+  onMessage = null,
 }) {
   const videoRef = useRef(null)
   const [status, setStatus] = useState('idle') // idle, recording, processing, speaking
@@ -32,24 +34,24 @@ export default function DigitalAvatar({
 
   const initializeDigitalHuman = async () => {
     try {
-      console.log('开始初始化数字人...');
-      
+      console.log('开始初始化数字人...')
+
       // 导入配置
-      const llmConfig = await import('../config/llmConfig.js').then(m => m.default);
-      console.log('LLM配置加载完成');
-      
+      const llmConfig = await import('../config/llmConfig.js').then((m) => m.default)
+      console.log('LLM配置加载完成')
+
       // 验证配置
-      const configValidation = llmConfig.validateConfig();
-      console.log('配置验证结果:', configValidation);
-      
+      const configValidation = llmConfig.validateConfig()
+      console.log('配置验证结果:', configValidation)
+
       if (!configValidation.isValid) {
-        console.error('配置验证失败:', configValidation.errors);
-        alert('配置错误:\n' + configValidation.errors.join('\n'));
-        return;
+        console.error('配置验证失败:', configValidation.errors)
+        alert(`配置错误:\n${configValidation.errors.join('\n')}`)
+        return
       }
-      
+
       if (configValidation.warnings && configValidation.warnings.length > 0) {
-        console.warn('配置警告:', configValidation.warnings);
+        console.warn('配置警告:', configValidation.warnings)
       }
 
       // 配置数字人服务（使用我们自己的LLM）
@@ -58,11 +60,10 @@ export default function DigitalAvatar({
           websocket_url: llmConfig.responseLLM.websocket_url,
           timeout: llmConfig.responseLLM.timeout,
           max_tokens: llmConfig.responseLLM.max_tokens,
-          model: llmConfig.responseLLM.model
+          model: llmConfig.responseLLM.model,
         },
-        sttTts: {
-          useSimulation: true // 使用模拟模式，不依赖外部API
-        }
+        websocket_url: llmConfig.responseLLM.websocket_url, // 添加顶级websocket_url
+        sttTts: {},
       }
 
       console.log('环境配置:', llmConfig.getEnvironmentConfig())
@@ -71,11 +72,11 @@ export default function DigitalAvatar({
       console.log('开始调用digitalHumanService.initialize...')
       const initialized = await digitalHumanService.initialize(config)
       console.log('初始化结果:', initialized)
-      
+
       if (initialized) {
-        console.log('数字人服务初始化成功!');
+        console.log('数字人服务初始化成功!')
         setIsInitialized(true)
-        
+
         // 设置回调函数
         digitalHumanService.setCallbacks({
           onStatusChange: (newStatus) => {
@@ -90,7 +91,7 @@ export default function DigitalAvatar({
           onError: (error) => {
             console.error('数字人服务错误:', error)
             setStatus('idle')
-          }
+          },
         })
       }
     } catch (error) {
@@ -100,52 +101,73 @@ export default function DigitalAvatar({
 
   const handleAvatarPress = async () => {
     if (!enableInteraction || !isInitialized) {
+      console.log('数字人未就绪，无法开始对话')
       return
     }
 
     if (status === 'idle') {
       // 开始语音对话
-      const started = await digitalHumanService.startVoiceConversation()
-      if (started) {
-        console.log('开始语音对话')
+      console.log('🎙️ 用户点击开始语音对话')
+      const result = await digitalHumanService.startVoiceConversation()
+      if (result.success) {
+        console.log(`✅ 语音对话已开始: ${result.message}`)
+      } else {
+        console.error('❌ 语音对话启动失败:', result.error)
       }
     } else if (status === 'recording') {
       // 结束录音并处理
+      console.log('🛑 用户点击停止录音')
       const processed = await digitalHumanService.stopVoiceConversation()
       if (processed) {
-        console.log('语音对话处理完成')
+        console.log('✅ 语音对话处理完成')
+      } else {
+        console.error('❌ 语音对话处理失败')
       }
+    } else if (status === 'processing') {
+      console.log('⏳ 正在处理中，请稍候...')
+    } else if (status === 'speaking') {
+      console.log('🗣️ 数字人正在说话中...')
     }
   }
 
   const getStatusText = () => {
+    if (!enableInteraction) return ''
+
     switch (status) {
       case 'recording':
-        return '🎤 正在录音...'
+        return '🎤 正在录音... (点击停止)'
       case 'processing':
-        return '🤔 思考中...'
+        return '🤔 正在思考中...'
       case 'speaking':
-        return '🗣️ 正在说话...'
+        return '🗣️ 正在回复中...'
+      case 'connected':
+        return '✅ 已连接，点击开始对话'
+      case 'disconnected':
+        return '⚠️ 连接断开，点击重试'
       default:
-        return enableInteraction ? '👋 点击开始对话' : ''
+        return isInitialized ? '👋 点击开始语音对话' : '⏳ 正在初始化...'
     }
   }
 
   const getStatusColor = () => {
     switch (status) {
       case 'recording':
-        return '#ff4444'
+        return '#ff4444' // 红色 - 录音中
       case 'processing':
-        return '#ffaa00'
+        return '#ffaa00' // 橙色 - 处理中
       case 'speaking':
-        return '#00aa44'
+        return '#00aa44' // 绿色 - 说话中
+      case 'connected':
+        return '#00aa44' // 绿色 - 已连接
+      case 'disconnected':
+        return '#ff6666' // 红色 - 断开连接
       default:
-        return '#666666'
+        return isInitialized ? '#4CAF50' : '#999999' // 初始化完成/未完成
     }
   }
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.container, style]}
       onPress={handleAvatarPress}
       activeOpacity={enableInteraction ? 0.8 : 1}
@@ -161,13 +183,13 @@ export default function DigitalAvatar({
           isLooping={loop}
           shouldPlay={autoPlay}
         />
-        
+
         {/* 状态指示器 */}
         {enableInteraction && (
           <View style={[styles.statusIndicator, { backgroundColor: getStatusColor() }]} />
         )}
       </View>
-      
+
       {/* 状态文字 */}
       {enableInteraction && (
         <Text style={styles.statusText}>{getStatusText()}</Text>
@@ -203,12 +225,12 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#666666'
+    backgroundColor: '#666666',
   },
   statusText: {
     marginTop: 10,
     fontSize: 14,
     color: '#666666',
     textAlign: 'center',
-  }
+  },
 })

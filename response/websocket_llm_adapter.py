@@ -7,6 +7,7 @@ WebSocket LLM Adapter
 import asyncio
 import json
 import os
+import time
 import torch
 import websockets
 import logging
@@ -124,16 +125,27 @@ class WebSocketLLMServer:
         self.clients.discard(websocket)
         logger.info(f"Client {websocket.remote_address} disconnected")
     
-    async def handle_client(self, websocket, path):
+    async def handle_client(self, websocket, path=None):
         """处理客户端连接"""
+        # 兼容不同版本的websockets库
+        if path:
+            logger.info(f"Client connected to path: {path}")
         await self.register_client(websocket)
         try:
             async for message in websocket:
                 await self.process_message(websocket, message)
         except websockets.exceptions.ConnectionClosed:
             logger.info("Client disconnected")
+        except Exception as e:
+            logger.error(f"Error in handle_client: {e}")
         finally:
             await self.unregister_client(websocket)
+    
+    def create_handler(self):
+        """创建兼容的处理器函数"""
+        async def handler(websocket, path=None):
+            return await self.handle_client(websocket, path)
+        return handler
     
     async def process_message(self, websocket, message):
         """处理接收到的消息"""
@@ -142,6 +154,8 @@ class WebSocketLLMServer:
             
             if data.get("type") == "llm_request":
                 await self.handle_llm_request(websocket, data)
+            elif data.get("type") == "ping":
+                await self.handle_ping(websocket, data)
             else:
                 await self.send_error(websocket, "Unknown message type", data.get("requestId"))
                 
@@ -158,8 +172,8 @@ class WebSocketLLMServer:
             request_data = data.get("data", {})
             
             prompt = request_data.get("prompt", "")
-            system_prompt = request_data.get("systemPrompt")
-            conversation_history = request_data.get("conversationHistory", [])
+            system_prompt = request_data.get("system_prompt")
+            conversation_history = request_data.get("conversation_history", [])
             
             if not prompt:
                 await self.send_error(websocket, "Empty prompt", request_id)
@@ -175,7 +189,7 @@ class WebSocketLLMServer:
                 "type": "llm_response",
                 "requestId": request_id,
                 "success": result["success"],
-                "timestamp": asyncio.get_event_loop().time()
+                "timestamp": int(time.time() * 1000)  # 统一使用JavaScript格式的时间戳(毫秒)
             }
             
             if result["success"]:
@@ -183,23 +197,44 @@ class WebSocketLLMServer:
             else:
                 response["error"] = result["error"]
             
-            await websocket.send(json.dumps(response))
+            await websocket.send(json.dumps(response, ensure_ascii=False))
             
         except Exception as e:
             logger.error(f"Error handling LLM request: {e}")
             await self.send_error(websocket, str(e), data.get("requestId"))
     
+    async def handle_ping(self, websocket, data):
+        """处理ping消息"""
+        try:
+            pong_response = {
+                "type": "pong",
+                "timestamp": int(time.time() * 1000)  # 统一使用JavaScript格式的时间戳(毫秒)
+            }
+            await websocket.send(json.dumps(pong_response, ensure_ascii=False))
+            logger.debug("Sent pong response")
+        except Exception as e:
+            logger.error(f"Error handling ping: {e}")
+    
     async def send_error(self, websocket, error_message, request_id=None):
         """发送错误响应"""
-        response = {
-            "type": "error",
-            "error": error_message,
-            "timestamp": asyncio.get_event_loop().time()
-        }
         if request_id:
-            response["requestId"] = request_id
+            # 如果有请求ID，发送LLM响应格式的错误
+            response = {
+                "type": "llm_response",
+                "requestId": request_id,
+                "success": False,
+                "error": error_message,
+                "timestamp": int(time.time() * 1000)
+            }
+        else:
+            # 如果没有请求ID，发送通用错误格式
+            response = {
+                "type": "error",
+                "error": error_message,
+                "timestamp": int(time.time() * 1000)
+            }
             
-        await websocket.send(json.dumps(response))
+        await websocket.send(json.dumps(response, ensure_ascii=False))
     
     async def start_server(self):
         """启动WebSocket服务器"""
@@ -211,8 +246,20 @@ class WebSocketLLMServer:
         
         # 启动WebSocket服务器
         logger.info(f"Starting WebSocket LLM server on {self.host}:{self.port}")
-        server = await websockets.serve(self.handle_client, self.host, self.port)
-        logger.info("Server started successfully")
+        try:
+            # 使用包装函数确保兼容性
+            handler = self.create_handler()
+            server = await websockets.serve(
+                handler,
+                host=self.host,
+                port=self.port,
+                ping_interval=20,
+                ping_timeout=10
+            )
+            logger.info("Server started successfully")
+        except Exception as e:
+            logger.error(f"Failed to start server: {e}")
+            raise
         
         # 保持服务器运行
         await server.wait_closed()

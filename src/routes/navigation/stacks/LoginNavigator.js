@@ -13,7 +13,7 @@ const Stack = createStackNavigator()
 export const LoginNavigator = () => {
   const { scheme } = useContext(ColorSchemeContext)
   const [loadingCompleted, setLoadingCompleted] = useState(false)
-  const navigationProps = scheme === 'dark' ? darkProps:lightProps
+  const navigationProps = scheme === 'dark' ? darkProps : lightProps
 
   const handleLoadingEnd = () => {
     setLoadingCompleted(true)
@@ -36,14 +36,14 @@ export const LoginNavigator = () => {
             name="Login"
             component={Login}
             options={({ navigation }) => ({
-              headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
+              headerBackground: scheme === 'dark' ? null : () => <HeaderStyle />,
             })}
           />
           <Stack.Screen
             name="Registration"
             component={Registration}
             options={({ navigation }) => ({
-              headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
+              headerBackground: scheme === 'dark' ? null : () => <HeaderStyle />,
             })}
           />
         </>

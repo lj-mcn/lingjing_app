@@ -1,173 +1,173 @@
-import axios from 'axios';
+import axios from 'axios'
 
 class LLMService {
   constructor() {
-    this.baseURL = 'https://api.openai.com/v1';
-    this.apiKey = ''; // 在实际使用时需要配置API密钥
-    this.model = 'gpt-3.5-turbo';
-    this.maxTokens = 1000;
-    this.temperature = 0.7;
-    this.conversationHistory = [];
+    this.baseURL = 'https://api.openai.com/v1'
+    this.apiKey = '' // 在实际使用时需要配置API密钥
+    this.model = 'gpt-3.5-turbo'
+    this.maxTokens = 1000
+    this.temperature = 0.7
+    this.conversationHistory = []
   }
 
-  setConfig({ apiKey, baseURL, model, maxTokens, temperature }) {
-    if (apiKey) this.apiKey = apiKey;
-    if (baseURL) this.baseURL = baseURL;
-    if (model) this.model = model;
-    if (maxTokens) this.maxTokens = maxTokens;
-    if (temperature) this.temperature = temperature;
+  setConfig({
+    apiKey, baseURL, model, maxTokens, temperature,
+  }) {
+    if (apiKey) this.apiKey = apiKey
+    if (baseURL) this.baseURL = baseURL
+    if (model) this.model = model
+    if (maxTokens) this.maxTokens = maxTokens
+    if (temperature) this.temperature = temperature
   }
 
   addSystemMessage(content) {
     this.conversationHistory.push({
       role: 'system',
-      content: content
-    });
+      content,
+    })
   }
 
   addUserMessage(content) {
     this.conversationHistory.push({
       role: 'user',
-      content: content
-    });
+      content,
+    })
   }
 
   addAssistantMessage(content) {
     this.conversationHistory.push({
       role: 'assistant',
-      content: content
-    });
+      content,
+    })
   }
 
   async sendMessage(userMessage, options = {}) {
     try {
       if (!this.apiKey) {
-        throw new Error('API密钥未配置');
+        throw new Error('API密钥未配置')
       }
 
       // 添加用户消息到历史记录
-      this.addUserMessage(userMessage);
+      this.addUserMessage(userMessage)
 
       const requestData = {
         model: options.model || this.model,
         messages: this.conversationHistory,
         max_tokens: options.maxTokens || this.maxTokens,
         temperature: options.temperature || this.temperature,
-        stream: false
-      };
+        stream: false,
+      }
 
       const response = await axios.post(
         `${this.baseURL}/chat/completions`,
         requestData,
         {
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
           },
-          timeout: 30000
-        }
-      );
+          timeout: 30000,
+        },
+      )
 
       if (response.data && response.data.choices && response.data.choices.length > 0) {
-        const assistantMessage = response.data.choices[0].message.content;
-        
+        const assistantMessage = response.data.choices[0].message.content
+
         // 添加AI回复到历史记录
-        this.addAssistantMessage(assistantMessage);
-        
+        this.addAssistantMessage(assistantMessage)
+
         return {
           success: true,
           message: assistantMessage,
-          usage: response.data.usage
-        };
-      } else {
-        throw new Error('无效的API响应格式');
+          usage: response.data.usage,
+        }
       }
+      throw new Error('无效的API响应格式')
     } catch (error) {
-      console.error('LLM API调用失败:', error);
-      
-      let errorMessage = '大模型调用失败';
+      console.error('LLM API调用失败:', error)
+
+      let errorMessage = '大模型调用失败'
       if (error.response) {
-        errorMessage += `: ${error.response.data?.error?.message || error.response.statusText}`;
+        errorMessage += `: ${error.response.data?.error?.message || error.response.statusText}`
       } else if (error.message) {
-        errorMessage += `: ${error.message}`;
+        errorMessage += `: ${error.message}`
       }
-      
+
       return {
         success: false,
-        error: errorMessage
-      };
+        error: errorMessage,
+      }
     }
   }
 
   async sendQuickMessage(userMessage, systemPrompt = null) {
     try {
-      const messages = [];
-      
+      const messages = []
+
       if (systemPrompt) {
         messages.push({
           role: 'system',
-          content: systemPrompt
-        });
+          content: systemPrompt,
+        })
       }
-      
+
       messages.push({
         role: 'user',
-        content: userMessage
-      });
+        content: userMessage,
+      })
 
       const requestData = {
         model: this.model,
-        messages: messages,
+        messages,
         max_tokens: this.maxTokens,
-        temperature: this.temperature
-      };
+        temperature: this.temperature,
+      }
 
       const response = await axios.post(
         `${this.baseURL}/chat/completions`,
         requestData,
         {
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
           },
-          timeout: 30000
-        }
-      );
+          timeout: 30000,
+        },
+      )
 
       if (response.data && response.data.choices && response.data.choices.length > 0) {
         return {
           success: true,
           message: response.data.choices[0].message.content,
-          usage: response.data.usage
-        };
-      } else {
-        throw new Error('无效的API响应格式');
+          usage: response.data.usage,
+        }
       }
+      throw new Error('无效的API响应格式')
     } catch (error) {
-      console.error('快速LLM调用失败:', error);
+      console.error('快速LLM调用失败:', error)
       return {
         success: false,
-        error: error.message
-      };
+        error: error.message,
+      }
     }
   }
 
   clearHistory() {
-    this.conversationHistory = [];
+    this.conversationHistory = []
   }
 
   getHistory() {
-    return [...this.conversationHistory];
+    return [...this.conversationHistory]
   }
 
   setSystemPrompt(prompt) {
     // 移除现有的系统提示，添加新的
-    this.conversationHistory = this.conversationHistory.filter(msg => msg.role !== 'system');
+    this.conversationHistory = this.conversationHistory.filter((msg) => msg.role !== 'system')
     if (prompt) {
       this.conversationHistory.unshift({
         role: 'system',
-        content: prompt
-      });
+        content: prompt,
+      })
     }
   }
 
@@ -193,16 +193,16 @@ class LLMService {
    - 提供情感支持和交流
    - 帮助用户解决问题
 
-请以嘎巴龙的身份与用户互动，让用户感受到温暖和快乐！`;
+请以嘎巴龙的身份与用户互动，让用户感受到温暖和快乐！`
 
-    this.setSystemPrompt(systemPrompt);
+    this.setSystemPrompt(systemPrompt)
   }
 }
 
 // 创建单例实例
-const llmService = new LLMService();
+const llmService = new LLMService()
 
 // 初始化嘎巴龙个性
-llmService.initializeGabalongPersonality();
+llmService.initializeGabalongPersonality()
 
-export default llmService;
+export default llmService

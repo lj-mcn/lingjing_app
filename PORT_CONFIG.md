@@ -82,9 +82,9 @@ sudo iptables -A INPUT -p tcp --dport 8000 -j ACCEPT
   "requestId": 123,
   "data": {
     "prompt": "用户输入内容",
-    "systemPrompt": "系统提示词",
-    "conversationHistory": [],
-    "maxTokens": 512
+    "system_prompt": "系统提示词",
+    "conversation_history": [],
+    "max_tokens": 512
   },
   "timestamp": 1648888888888
 }

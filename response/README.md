@@ -46,12 +46,12 @@ python websocket_llm_adapter.py --host 0.0.0.0 --port 8080 --model "Qwen/Qwen2.5
   "requestId": 1,
   "data": {
     "prompt": "你好",
-    "systemPrompt": "你是一个友好的助手",
-    "conversationHistory": [
+    "system_prompt": "你是一个友好的助手",
+    "conversation_history": [
       {"role": "user", "content": "之前的问题"},
       {"role": "assistant", "content": "之前的回答"}
     ],
-    "maxTokens": 512
+    "max_tokens": 512
   },
   "timestamp": 1642147200000
 }
