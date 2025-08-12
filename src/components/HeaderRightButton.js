@@ -1,8 +1,8 @@
-import React from "react";
-import { TouchableOpacity, StyleSheet } from "react-native";
+import React from 'react'
+import { TouchableOpacity, StyleSheet } from 'react-native'
 import FontIcon from 'react-native-vector-icons/FontAwesome'
-import { colors } from "../theme";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation } from '@react-navigation/native'
+import { colors } from '../theme'
 
 export default function HeaderRightButton(props) {
   const { from, userData } = props
@@ -13,8 +13,8 @@ export default function HeaderRightButton(props) {
       screen: 'Post',
       params: {
         data: userData,
-        from: from
-      }
+        from,
+      },
     })
   }
 
@@ -36,6 +36,6 @@ const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10
-  }
+    marginRight: 10,
+  },
 })

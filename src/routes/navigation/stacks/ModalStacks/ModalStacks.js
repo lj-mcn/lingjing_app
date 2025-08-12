@@ -1,9 +1,9 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext } from 'react'
 import { createStackNavigator } from '@react-navigation/stack'
-import { HomeTitleContext } from "../../../../context/HomeTitleContext";
+import { HomeTitleContext } from '../../../../context/HomeTitleContext'
 
-import Post from "../../../../scenes/post";
-import Print from "../../../../scenes/print";
+import Post from '../../../../scenes/post'
+import Print from '../../../../scenes/print'
 
 const Stack = createStackNavigator()
 
@@ -25,7 +25,7 @@ export const ModalStacks = () => {
             }}
           >
             <Stack.Screen
-              name='Post'
+              name="Post"
               component={Post}
               options={{
                 title: ctx.title,
@@ -33,11 +33,11 @@ export const ModalStacks = () => {
               }}
             />
             <Stack.Screen
-              name='Print'
+              name="Print"
               component={Print}
             />
           </Stack.Navigator>
-      )}
+        )}
       </HomeTitleContext.Consumer>
     </HomeTitleContext.Provider>
   )

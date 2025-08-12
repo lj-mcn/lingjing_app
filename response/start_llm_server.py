@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 
 def main():
     """主函数"""
-    # 默认配置
-    host = "localhost"
+    # 默认配置 - 绑定到所有接口以允许远程连接
+    host = "0.0.0.0"  # 改为0.0.0.0以允许远程连接
     port = 8000
     model_path = "Qwen/Qwen2.5-1.5B-Instruct"  # 使用较小的模型以提高响应速度
     

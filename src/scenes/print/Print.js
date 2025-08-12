@@ -1,8 +1,10 @@
 import React, { useEffect, useContext, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import ScreenTemplate from '../../components/ScreenTemplate'
+import {
+  View, Text, StyleSheet, ScrollView,
+} from 'react-native'
 import axios from 'axios'
-import RenderItem from './RenderItem';
+import ScreenTemplate from '../../components/ScreenTemplate'
+import RenderItem from './RenderItem'
 
 export default function Print() {
   const [data, setData] = useState([])
@@ -13,12 +15,12 @@ export default function Print() {
     fetchData()
   }, [])
 
-  const fetchData = async() => {
+  const fetchData = async () => {
     try {
       setIsLoading(true)
       const { data } = await axios.get('https://jsonplaceholder.typicode.com/posts')
       setData(data)
-    } catch(e) {
+    } catch (e) {
       console.log('error', e)
       setIsError(true)
     } finally {
@@ -29,11 +31,9 @@ export default function Print() {
   return (
     <ScreenTemplate isLoading={isLoading} isError={isError}>
       <ScrollView style={styles.main}>
-        {data.map((item, i) => {
-          return (
-            <RenderItem item={item} key={i} index={i} />
-          )
-        })}
+        {data.map((item, i) => (
+          <RenderItem item={item} key={i} index={i} />
+        ))}
       </ScrollView>
     </ScreenTemplate>
   )

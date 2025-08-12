@@ -1,9 +1,11 @@
-import React from "react";
-import { TouchableOpacity } from "react-native";
+import React from 'react'
+import { TouchableOpacity } from 'react-native'
 import FontIcon from 'react-native-vector-icons/FontAwesome'
 
 export default function IconButton(props) {
-  const { icon, onPress, color, size, containerStyle } = props
+  const {
+    icon, onPress, color, size, containerStyle,
+  } = props
 
   return (
     <TouchableOpacity

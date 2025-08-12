@@ -33,7 +33,7 @@ export default function LoadingVideo({ route }) {
         useNativeControls={false}
         resizeMode="cover"
         isLooping={false}
-        shouldPlay={true}
+        shouldPlay
         onPlaybackStatusUpdate={(status) => {
           if (status.didJustFinish) {
             handleVideoEnd()
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   video: {
-    width: width,
-    height: height,
+    width,
+    height,
   },
 })

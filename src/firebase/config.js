@@ -1,12 +1,12 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp } from 'firebase/app'
 // authentication
-import { initializeAuth } from 'firebase/auth';
-import { getReactNativePersistence } from 'firebase/auth/react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { initializeAuth } from 'firebase/auth'
+import { getReactNativePersistence } from 'firebase/auth/react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 // firestore
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore'
 // cloud storage
-import { getStorage } from "firebase/storage";
+import { getStorage } from 'firebase/storage'
 
 import { firebaseKey } from '../config'
 
@@ -17,14 +17,14 @@ const firebaseConfig = {
   storageBucket: firebaseKey.storageBucket,
   messagingSenderId: firebaseKey.messagingSenderId,
   appId: firebaseKey.appId,
-  measurementId: firebaseKey.measurementId
-};
+  measurementId: firebaseKey.measurementId,
+}
 
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig)
 const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
-});
-const firestore = getFirestore();
-const storage = getStorage();
+})
+const firestore = getFirestore()
+const storage = getStorage()
 
-export { auth, firestore, storage };
+export { auth, firestore, storage }
