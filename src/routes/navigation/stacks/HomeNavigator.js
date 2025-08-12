@@ -8,6 +8,8 @@ import HeaderStyle from './headerComponents/HeaderStyle'
 import Home from '../../../scenes/home'
 import Detail from '../../../scenes/detail'
 import Blank from '../../../scenes/blank'
+import Voice from '../../../scenes/voice'
+import TextChat from '../../../scenes/text'
 
 const Stack = createStackNavigator()
 
@@ -45,6 +47,22 @@ export const HomeNavigator = () => {
               component={Blank}
               options={{ 
                 title: '空白页面',
+                headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
+              }}
+            />
+            <Stack.Screen
+              name="Voice"
+              component={Voice}
+              options={{ 
+                title: '语音对话',
+                headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
+              }}
+            />
+            <Stack.Screen
+              name="Text"
+              component={TextChat}
+              options={{ 
+                title: '文字对话',
                 headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
               }}
             />

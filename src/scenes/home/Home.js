@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native'
 import IconButton from '../../components/IconButton'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import Button from '../../components/Button'
+import MenuOverlay from '../../components/MenuOverlay'
 import { firestore } from '../../firebase/config'
 import { doc, onSnapshot } from 'firebase/firestore';
 import { colors, fontSize } from '../../theme'
@@ -16,6 +17,7 @@ import { getKilobyteSize } from '../../utils/functions'
 export default function Home() {
   const navigation = useNavigation()
   const [token, setToken] = useState('')
+  const [showMenu, setShowMenu] = useState(false)
   const { userData } = useContext(UserDataContext)
   const { scheme } = useContext(ColorSchemeContext)
   const isDark = scheme === 'dark'
@@ -47,6 +49,18 @@ export default function Home() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => setShowMenu(true)}
+        >
+          <Image
+            source={require('../../../assets/images/嘎巴龙菜单栏.png')}
+            style={styles.menuButtonImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      ),
       headerRight: () => (
         <IconButton
           icon="align-right"
@@ -87,17 +101,11 @@ export default function Home() {
   }
 
   const onLeftButtonPress = () => {
-    navigation.navigate('Detail', { userData: userData, from: 'Home', title: 'Left Page' })
+    navigation.navigate('Voice')
   }
 
   const onRightButtonPress = () => {
-    navigation.navigate('ModalStacks', {
-      screen: 'Post',
-      params: {
-        data: userData,
-        from: 'Right Button'
-      }
-    })
+    navigation.navigate('Text')
   }
 
   const swipeGesture = Gesture.Pan()
@@ -106,7 +114,11 @@ export default function Home() {
       
       // 检测左滑手势: 向左滑动超过100像素或速度足够快
       if (translationX < -100 || velocityX < -500) {
-        navigation.navigate('Blank')
+        navigation.navigate('Voice')
+      }
+      // 检测右滑手势: 向右滑动超过100像素或速度足够快
+      if (translationX > 100 || velocityX > 500) {
+        navigation.navigate('Text')
       }
     })
 
@@ -170,6 +182,13 @@ export default function Home() {
           </View>
         </GestureDetector>
       </GestureHandlerRootView>
+      
+      {/* 菜单覆盖层 */}
+      <MenuOverlay 
+        visible={showMenu}
+        onClose={() => setShowMenu(false)}
+        isDark={isDark}
+      />
     </ScreenTemplate>
   )
 }
@@ -227,5 +246,16 @@ const styles = StyleSheet.create({
   navImage: {
     width: 40,
     height: 40,
+  },
+  menuButton: {
+    paddingLeft: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    marginLeft: 10,
+  },
+  menuButtonImage: {
+    width: 32,
+    height: 32,
   },
 })
