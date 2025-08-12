@@ -5,9 +5,9 @@ class ResponseLLMService {
   constructor() {
     this.isInitialized = false;
     this.modelConfig = {
-      endpoint: llmConfig.responseLLM.websocketUrl,
+      endpoint: llmConfig.responseLLM.websocket_url,
       timeout: llmConfig.responseLLM.timeout,
-      maxTokens: llmConfig.responseLLM.maxTokens,
+      max_tokens: llmConfig.responseLLM.max_tokens,
     };
     this.requestId = 0;
     this.pendingRequests = new Map();
@@ -101,9 +101,9 @@ class ResponseLLMService {
         requestId: requestId,
         data: {
           prompt: userInput,
-          conversationHistory: conversationHistory,
-          maxTokens: this.modelConfig.maxTokens,
-          systemPrompt: llmConfig.gabalong.systemPrompt,
+          conversation_history: conversationHistory,
+          max_tokens: this.modelConfig.max_tokens,
+          system_prompt: llmConfig.gabalong.systemPrompt,
         },
         timestamp: Date.now()
       };

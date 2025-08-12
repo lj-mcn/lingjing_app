@@ -55,9 +55,9 @@ export default function DigitalAvatar({
       // 配置数字人服务（使用我们自己的LLM）
       const config = {
         llm: {
-          websocketUrl: llmConfig.responseLLM.websocketUrl,
+          websocket_url: llmConfig.responseLLM.websocket_url,
           timeout: llmConfig.responseLLM.timeout,
-          maxTokens: llmConfig.responseLLM.maxTokens,
+          max_tokens: llmConfig.responseLLM.max_tokens,
           model: llmConfig.responseLLM.model
         },
         sttTts: {

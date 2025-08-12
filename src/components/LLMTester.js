@@ -40,9 +40,9 @@ export default function LLMTester() {
       addLog('⚙️ 准备初始化配置...');
       const config = {
         llm: {
-          websocketUrl: llmConfig.responseLLM.websocketUrl,
+          websocket_url: llmConfig.responseLLM.websocket_url,
           timeout: llmConfig.responseLLM.timeout,
-          maxTokens: llmConfig.responseLLM.maxTokens,
+          max_tokens: llmConfig.responseLLM.max_tokens,
           model: llmConfig.responseLLM.model
         },
         sttTts: {
@@ -50,7 +50,7 @@ export default function LLMTester() {
         }
       };
 
-      addLog(`🌐 LLM服务器地址: ${config.llm.websocketUrl}`);
+      addLog(`🌐 LLM服务器地址: ${config.llm.websocket_url}`);
       addLog(`⏱️ 超时设置: ${config.llm.timeout}ms`);
       addLog(`🤖 使用模型: ${config.llm.model}`);
       addLog('🔧 调用digitalHumanService.initialize...');
@@ -149,7 +149,7 @@ export default function LLMTester() {
     addLog('🌐 开始网络连接测试...');
     
     try {
-      const serverUrl = llmConfig.responseLLM.websocketUrl;
+      const serverUrl = llmConfig.responseLLM.websocket_url;
       const serverIP = serverUrl.replace('ws://', '').replace('wss://', '').split(':')[0];
       const serverPort = serverUrl.split(':')[2] || '8000';
       

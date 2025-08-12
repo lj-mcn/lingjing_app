@@ -29,10 +29,10 @@ const llmConfig = {
   // Response LLM配置 (使用我们自己的大模型)
   responseLLM: {
     // 远程大模型服务器配置 
-    websocketUrl: 'ws://10.91.225.137:8000', // 你同学的电脑IP (直接配置，不依赖环境变量)
+    websocket_url: 'ws://10.91.225.137:8000', // 你同学的电脑IP (直接配置，不依赖环境变量)
     timeout: 60000, // 增加超时时间以应对网络延迟
     model: 'Qwen2.5-1.5B-Instruct',
-    maxTokens: 512,
+    max_tokens: 512,
     
     // 网络配置
     reconnectAttempts: 10,
@@ -100,13 +100,13 @@ const llmConfig = {
     const warnings = [];
     
     // 检查自己的LLM配置
-    if (!this.responseLLM.websocketUrl) {
+    if (!this.responseLLM.websocket_url) {
       errors.push('缺少LLM服务器地址 - 请设置LLM_SERVER_URL环境变量');
     }
     
     // 检查网络连通性提示
-    if (this.responseLLM.websocketUrl) {
-      if (this.responseLLM.websocketUrl.includes('192.168') || this.responseLLM.websocketUrl.includes('10.91')) {
+    if (this.responseLLM.websocket_url) {
+      if (this.responseLLM.websocket_url.includes('192.168') || this.responseLLM.websocket_url.includes('10.91')) {
         warnings.push('使用内网IP地址，请确保两台电脑在同一网络中');
       }
     }
@@ -123,11 +123,11 @@ const llmConfig = {
     return {
       // 我们自己的LLM配置
       llmServer: {
-        serverUrl: this.responseLLM.websocketUrl,
-        isConfigured: !!this.responseLLM.websocketUrl,
+        serverUrl: this.responseLLM.websocket_url,
+        isConfigured: !!this.responseLLM.websocket_url,
         model: this.responseLLM.model,
         timeout: this.responseLLM.timeout,
-        maxTokens: this.responseLLM.maxTokens
+        max_tokens: this.responseLLM.max_tokens
       },
       
       // 开发配置
