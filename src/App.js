@@ -6,6 +6,7 @@ import { fontAssets } from 'theme/fonts'
 import { ColorSchemeContextProvider } from './context/ColorSchemeContext'
 import { UserDataContextProvider } from './context/UserDataContext'
 import { AppContextProvider } from './context/AppContext'
+import { AppFlowProvider } from './context/AppFlowContext'
 
 // assets
 import Router from './routes'
@@ -35,7 +36,9 @@ const App = () => {
     <AppContextProvider>
       <ColorSchemeContextProvider>
         <UserDataContextProvider>
-          <Router />
+          <AppFlowProvider>
+            <Router />
+          </AppFlowProvider>
         </UserDataContextProvider>
       </ColorSchemeContextProvider>
     </AppContextProvider>

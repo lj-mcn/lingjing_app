@@ -29,7 +29,7 @@ export default function VideoPlayer({ route }) {
       <Video
         ref={videoRef}
         style={styles.video}
-        source={require('../../../assets/images/rubbish_village.mp4')}
+        source={require('../../../assets/images/垃圾村漫游视频.mp4')}
         useNativeControls={false}
         resizeMode="cover"
         isLooping={false}

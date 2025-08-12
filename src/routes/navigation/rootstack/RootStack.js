@@ -10,6 +10,7 @@ import VideoPlayer from '../../../scenes/video'
 import MusicSettings from '../../../scenes/musicSettings'
 import { firestore } from '../../../firebase/config'
 import { UserDataContext } from '../../../context/UserDataContext'
+import { useAppFlow } from '../../../context/AppFlowContext'
 import { expoProjectId } from '../../../config'
 
 const Stack = createStackNavigator()
@@ -24,8 +25,7 @@ Notifications.setNotificationHandler({
 
 export default function RootStack() {
   const { userData } = useContext(UserDataContext)
-  const [videoWatched, setVideoWatched] = useState(false)
-  const [musicSettingsCompleted, setMusicSettingsCompleted] = useState(false)
+  const { videoWatched, musicSettingsCompleted, markVideoWatched, markMusicSettingsCompleted } = useAppFlow()
   const isIos = Platform.OS === 'ios'
 
   useEffect(() => {
@@ -62,8 +62,8 @@ export default function RootStack() {
 
   const handleMusicChoice = (choice) => {
     console.log('Music choice:', choice)
-    // 无论选择什么都进入主应用
-    setMusicSettingsCompleted(true)
+    // 用户选择后进入视频播放阶段
+    markMusicSettingsCompleted()
   }
 
   return (
@@ -76,7 +76,7 @@ export default function RootStack() {
         <Stack.Screen
           name="IntroVideo"
           component={VideoPlayer}
-          initialParams={{ onVideoEnd: () => setVideoWatched(true) }}
+          initialParams={{ onVideoEnd: () => markVideoWatched() }}
         />
       ) : !musicSettingsCompleted ? (
         <Stack.Screen

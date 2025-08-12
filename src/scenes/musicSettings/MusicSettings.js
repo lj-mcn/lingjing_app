@@ -26,8 +26,8 @@ export default function MusicSettings({ route }) {
   return (
     <View style={styles.container}>
       <StatusBar hidden />
-      <ImageBackground
-        source={require('../../../assets/images/music.png')}
+      <ImageBackground 
+        source={require('../../../assets/images/提示弹窗.png')} 
         style={styles.backgroundImage}
         resizeMode="cover"
       >

@@ -29,11 +29,10 @@ const llmConfig = {
   // Response LLM配置 (使用我们自己的大模型)
   responseLLM: {
     // 远程大模型服务器配置
-    websocket_url: 'ws://192.168.43.119:8000', // 你同学的电脑IP (直接配置，不依赖环境变量)
+    websocket_url: 'ws://10.91.225.137:8000', // 你同学的电脑IP (直接配置，不依赖环境变量)
     timeout: 60000, // 增加超时时间以应对网络延迟
     model: 'Qwen2.5-1.5B-Instruct',
     max_tokens: 512,
-
     // 网络配置
     reconnectAttempts: 3,
     reconnectDelay: 3000,

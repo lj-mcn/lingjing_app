@@ -26,7 +26,7 @@ export default function Follow() {
   const [inputText, setInputText] = useState('')
 
   useEffect(() => {
-    console.log('Follow screen - Connect with Gabalong')
+    console.log('Follow screen - 关注列表')
   }, [])
 
   const handleMessage = (message) => {
@@ -138,59 +138,55 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 40,
     position: 'relative',
   },
   avatar: {
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    width: 200,
+    height: 260,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 20,
   },
   avatarVideo: {
-    width: 200,
-    height: 280,
-    borderRadius: 15,
+    width: '100%',
+    height: '100%',
   },
   welcomeText: {
     fontSize: fontSize.large,
+    fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
-    fontWeight: '600',
   },
   avatarName: {
-    fontSize: fontSize.small,
+    fontSize: fontSize.middle,
     textAlign: 'center',
-    marginBottom: 15,
     opacity: 0.8,
+    marginBottom: 20,
   },
   chatContainer: {
     flex: 1,
-    paddingHorizontal: 15,
-    marginBottom: 10,
+    paddingHorizontal: 20,
   },
   messagesContainer: {
     flex: 1,
-    borderRadius: 10,
+    borderRadius: 15,
     padding: 15,
-    maxHeight: 200,
+    marginBottom: 15,
+    maxHeight: 300,
   },
   emptyText: {
-    textAlign: 'center',
     fontSize: fontSize.middle,
-    opacity: 0.6,
+    textAlign: 'center',
+    opacity: 0.7,
     fontStyle: 'italic',
+    marginTop: 20,
   },
   messageItem: {
-    marginBottom: 12,
+    marginVertical: 5,
     padding: 10,
-    borderRadius: 8,
+    borderRadius: 10,
     maxWidth: '85%',
   },
   userMessage: {
@@ -198,30 +194,32 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   assistantMessage: {
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: 'rgba(100, 100, 100, 0.1)',
     alignSelf: 'flex-start',
   },
   messageText: {
     fontSize: fontSize.small,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   inputContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     alignItems: 'flex-end',
+    gap: 10,
   },
   textInput: {
     flex: 1,
     borderRadius: 20,
     paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginRight: 10,
-    fontSize: fontSize.middle,
-    maxHeight: 100,
+    paddingVertical: 12,
+    fontSize: fontSize.small,
+    minHeight: 45,
+    maxHeight: 120,
   },
   sendButton: {
-    minWidth: 60,
+    minWidth: 70,
+    paddingVertical: 12,
   },
   backgroundDecoration: {
     position: 'absolute',
