@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useContext } from 'react'
-import { Text, View, ScrollView, StyleSheet } from 'react-native'
+import {
+  Text, View, ScrollView, StyleSheet,
+} from 'react-native'
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
+import { colors, fontSize } from 'theme'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import Button from '../../components/Button'
-import { useNavigation } from '@react-navigation/native'
-import { useRoute } from '@react-navigation/native'
-import { colors, fontSize } from 'theme'
 import { HomeTitleContext } from '../../context/HomeTitleContext'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
-import { useFocusEffect } from '@react-navigation/native'
 
 export default function Detail() {
   const navigation = useNavigation()
@@ -17,13 +17,13 @@ export default function Detail() {
   const { scheme } = useContext(ColorSchemeContext)
   const isDark = scheme === 'dark'
   const colorScheme = {
-    content: isDark? styles.darkContent : styles.lightContent,
-    text: isDark? colors.white : colors.primaryText
+    content: isDark ? styles.darkContent : styles.lightContent,
+    text: isDark ? colors.white : colors.primaryText,
   }
 
   useFocusEffect(() => {
     setTitle(title)
-  });
+  })
 
   useEffect(() => {
     console.log('Detail screen')
@@ -33,10 +33,10 @@ export default function Detail() {
     <ScreenTemplate>
       <ScrollView style={styles.main}>
         <View style={colorScheme.content}>
-          <Text style={[styles.field, {color: colorScheme.text}]}>{userData.id}</Text>
-          <Text style={[styles.field, {color: colorScheme.text}]}>{userData.fullName}</Text>
-          <Text style={[styles.field, {color: colorScheme.text}]}>{userData.email}</Text>
-          <Text style={[styles.field, {color: colorScheme.text}]}>{userData.avatar}</Text>
+          <Text style={[styles.field, { color: colorScheme.text }]}>{userData.id}</Text>
+          <Text style={[styles.field, { color: colorScheme.text }]}>{userData.fullName}</Text>
+          <Text style={[styles.field, { color: colorScheme.text }]}>{userData.email}</Text>
+          <Text style={[styles.field, { color: colorScheme.text }]}>{userData.avatar}</Text>
         </View>
         <Button
           label={`Back to ${from}`}
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.xxxLarge,
     marginBottom: 20,
-    textAlign: 'center'
+    textAlign: 'center',
   },
   field: {
     fontSize: fontSize.middle,

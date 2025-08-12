@@ -9,12 +9,12 @@ export const ColorSchemeContextProvider = (props) => {
 
   useEffect(() => {
     setScheme(colorScheme)
-  }, [colorScheme]);
+  }, [colorScheme])
 
   return (
     <ColorSchemeContext.Provider
       value={{
-        scheme, setScheme
+        scheme, setScheme,
       }}
     >
       {props.children}

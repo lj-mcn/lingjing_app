@@ -1,23 +1,24 @@
 import React, { useState, useEffect, useContext } from 'react'
-import { Text, View, StyleSheet, Platform } from 'react-native'
-import ScreenTemplate from '../../components/ScreenTemplate'
-import Button from '../../components/Button'
-import TextInputBox from '../../components/TextInputBox'
-import { firestore, storage } from '../../firebase/config'
-import { doc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { Avatar } from '@rneui/themed';
+import {
+  Text, View, StyleSheet, Platform,
+} from 'react-native'
+import { doc, updateDoc } from 'firebase/firestore'
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+import { Avatar } from '@rneui/themed'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
 import { useNavigation } from '@react-navigation/native'
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
+import Spinner from 'react-native-loading-spinner-overlay'
+import ScreenTemplate from '../../components/ScreenTemplate'
+import Button from '../../components/Button'
+import TextInputBox from '../../components/TextInputBox'
+import { firestore, storage, auth } from '../../firebase/config'
 import { colors, fontSize } from '../../theme'
 import { UserDataContext } from '../../context/UserDataContext'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
-import { auth } from '../../firebase/config'
 import { showToast } from '../../utils/ShowToast'
-import Spinner from 'react-native-loading-spinner-overlay'
 
 export default function Edit() {
   const { userData } = useContext(UserDataContext)
@@ -32,8 +33,8 @@ export default function Edit() {
   const [spinner, setSpinner] = useState(false)
   const isDark = scheme === 'dark'
   const colorScheme = {
-    text: isDark? colors.white : colors.primaryText,
-    progress: isDark? styles.darkprogress : styles.progress,
+    text: isDark ? colors.white : colors.primaryText,
+    progress: isDark ? styles.darkprogress : styles.progress,
   }
 
   useEffect(() => {
@@ -45,70 +46,69 @@ export default function Edit() {
       if (Platform.OS === 'ios') {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
         if (status !== 'granted') {
-          alert("Permission is required for use.");
-          return;
+          alert('Permission is required for use.')
+          return
         }
       }
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: false,
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: false
-      });
-        if (!result.canceled) {
-          let actions = [];
-          actions.push({ resize: { width: 300 } });
-          const manipulatorResult = await ImageManipulator.manipulateAsync(
-            result.assets[0].uri,
-            actions,
-            {
-              compress: 0.4,
-            },
-          );
-          const localUri = await fetch(manipulatorResult.uri);
-          const localBlob = await localUri.blob();
-          const filename = userData.id + new Date().getTime()
-          const storageRef = ref(storage, `avatar/${userData.id}/` + filename)
-          const uploadTask = uploadBytesResumable(storageRef, localBlob)
-          uploadTask.on('state_changed',
-            (snapshot) => {
-              let progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              setProgress(parseInt(progress) + '%')
-            },
-            (error) => {
-              console.log(error);
-              alert("Upload failed.");
-            },
-            () => {
-              getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                setProgress('')
-                setAvatar(downloadURL)
-              });
-            }
-          );
-        }
+        allowsMultipleSelection: false,
+      })
+      if (!result.canceled) {
+        const actions = []
+        actions.push({ resize: { width: 300 } })
+        const manipulatorResult = await ImageManipulator.manipulateAsync(
+          result.assets[0].uri,
+          actions,
+          {
+            compress: 0.4,
+          },
+        )
+        const localUri = await fetch(manipulatorResult.uri)
+        const localBlob = await localUri.blob()
+        const filename = userData.id + new Date().getTime()
+        const storageRef = ref(storage, `avatar/${userData.id}/${filename}`)
+        const uploadTask = uploadBytesResumable(storageRef, localBlob)
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+            setProgress(`${parseInt(progress)}%`)
+          },
+          (error) => {
+            console.log(error)
+            alert('Upload failed.')
+          },
+          () => {
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+              setProgress('')
+              setAvatar(downloadURL)
+            })
+          })
+      }
     } catch (e) {
-      console.log('error',e.message);
-      alert("The size may be too much.");
+      console.log('error', e.message)
+      alert('The size may be too much.')
     }
   }
 
-  const profileUpdate = async() => {
+  const profileUpdate = async () => {
     try {
       const data = {
         id: userData.id,
         email: userData.email,
-        fullName: fullName,
-        avatar: avatar,
+        fullName,
+        avatar,
       }
-      const usersRef = doc(firestore, 'users', userData.id);
+      const usersRef = doc(firestore, 'users', userData.id)
       await updateDoc(usersRef, data)
       navigation.goBack()
-    } catch(e) {
+    } catch (e) {
       alert(e)
     }
   }
 
-  const onUpdatePassword = async() => {
+  const onUpdatePassword = async () => {
     if (password !== confirmPassword) {
       alert("Passwords don't match.")
       return
@@ -122,12 +122,12 @@ export default function Edit() {
       showToast({
         title: 'Password changed',
         body: 'Your password has changed.',
-        isDark
+        isDark,
       })
       setCurrentPassword('')
       setPassword('')
       setConfirmPassword('')
-    } catch(e) {
+    } catch (e) {
       console.log(e)
       alert(e)
     } finally {
@@ -150,46 +150,46 @@ export default function Edit() {
           />
         </View>
         <Text style={colorScheme.progress}>{progress}</Text>
-        <Text style={[styles.field, {color: colorScheme.text}]}>Name:</Text>
+        <Text style={[styles.field, { color: colorScheme.text }]}>Name:</Text>
         <TextInputBox
           placeholder={fullName}
           onChangeText={(text) => setFullName(text)}
           value={fullName}
           autoCapitalize="none"
         />
-        <Text style={[styles.field, {color: colorScheme.text}]}>Mail:</Text>
-        <Text style={[styles.title, {color: colorScheme.text}]}>{userData.email}</Text>
+        <Text style={[styles.field, { color: colorScheme.text }]}>Mail:</Text>
+        <Text style={[styles.title, { color: colorScheme.text }]}>{userData.email}</Text>
         <Button
-          label='Update'
+          label="Update"
           color={colors.primary}
           onPress={profileUpdate}
           disable={!fullName}
         />
         <View style={styles.changePasswordContainer}>
-          <Text style={[styles.field, {color: colorScheme.text}]}>Change Password:</Text>
+          <Text style={[styles.field, { color: colorScheme.text }]}>Change Password:</Text>
           <TextInputBox
-            secureTextEntry={true}
-            placeholder='Current Password'
+            secureTextEntry
+            placeholder="Current Password"
             onChangeText={(text) => setCurrentPassword(text)}
             value={currentPassword}
             autoCapitalize="none"
           />
           <TextInputBox
-            secureTextEntry={true}
-            placeholder='New Password'
+            secureTextEntry
+            placeholder="New Password"
             onChangeText={(text) => setPassword(text)}
             value={password}
             autoCapitalize="none"
           />
           <TextInputBox
-            secureTextEntry={true}
-            placeholder='Confirm New Password'
+            secureTextEntry
+            placeholder="Confirm New Password"
             onChangeText={(text) => setConfirmPassword(text)}
             value={confirmPassword}
             autoCapitalize="none"
           />
           <Button
-            label='Change Password'
+            label="Change Password"
             color={colors.pink}
             onPress={onUpdatePassword}
             disable={!currentPassword || !password || !confirmPassword}
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.xxxLarge,
     marginBottom: 20,
-    textAlign: 'center'
+    textAlign: 'center',
   },
   field: {
     fontSize: fontSize.middle,
@@ -228,9 +228,9 @@ const styles = StyleSheet.create({
   },
   avatar: {
     margin: 30,
-    alignSelf: "center",
+    alignSelf: 'center',
   },
   changePasswordContainer: {
-    paddingVertical: 30
-  }
+    paddingVertical: 30,
+  },
 })

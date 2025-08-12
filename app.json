@@ -2,7 +2,6 @@
   "expo": {
     "name": "expo-github",
     "slug": "expo-github",
-    "privacy": "public",
     "platforms": [
       "ios",
       "android",
@@ -26,7 +25,8 @@
       "bundleIdentifier": "reactnative.expo.firebase.boilerplate",
       "buildNumber": "1",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Use the photo library to change your avatar."
+        "NSPhotoLibraryUsageDescription": "Use the photo library to change your avatar.",
+        "NSMicrophoneUsageDescription": "This app needs access to microphone to record voice messages for the digital human interaction."
       },
       "userInterfaceStyle": "automatic"
     },
@@ -36,22 +36,13 @@
       "userInterfaceStyle": "automatic",
       "permissions": [
         "VIBRATE",
-        "CAMERA"
+        "CAMERA",
+        "RECORD_AUDIO"
       ]
     },
     "web": {
       "favicon": "./assets/images/logo-sm.png",
       "bundler": "metro"
-    },
-    "packagerOpts": {
-      "config": "metro.config.js",
-      "sourceExts": [
-        "js",
-        "jsx",
-        "svg",
-        "ts",
-        "tsx"
-      ]
     },
     "description": "",
     "plugins": [

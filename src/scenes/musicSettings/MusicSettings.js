@@ -1,5 +1,7 @@
 import React from 'react'
-import { View, StyleSheet, Dimensions, TouchableOpacity, Text, ImageBackground } from 'react-native'
+import {
+  View, StyleSheet, Dimensions, TouchableOpacity, Text, ImageBackground,
+} from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 
 const { width, height } = Dimensions.get('window')
@@ -24,21 +26,21 @@ export default function MusicSettings({ route }) {
   return (
     <View style={styles.container}>
       <StatusBar hidden />
-      <ImageBackground 
-        source={require('../../../assets/images/music.png')} 
+      <ImageBackground
+        source={require('../../../assets/images/music.png')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
         <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={[styles.button, styles.muteButton]} 
+          <TouchableOpacity
+            style={[styles.button, styles.muteButton]}
             onPress={handleMuteChoice}
           >
             <Text style={styles.buttonText}>先静音吧</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.button, styles.okButton]} 
+
+          <TouchableOpacity
+            style={[styles.button, styles.okButton]}
             onPress={handleOkChoice}
           >
             <Text style={styles.buttonText}>知道咯</Text>
@@ -56,8 +58,8 @@ const styles = StyleSheet.create({
   },
   backgroundImage: {
     flex: 1,
-    width: width,
-    height: height,
+    width,
+    height,
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingTop: height / 12 + height / 5 - 16,

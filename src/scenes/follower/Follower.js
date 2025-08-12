@@ -12,7 +12,7 @@ export default function Follower() {
   const [visible, setVisible] = useState(false)
   const isDark = scheme === 'dark'
   const colorScheme = {
-    text: isDark? colors.white : colors.primaryText
+    text: isDark ? colors.white : colors.primaryText,
   }
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export default function Follower() {
     showToast({
       title: 'Hello',
       body: 'This is some something 👋',
-      isDark
+      isDark,
     })
   }
 
@@ -35,29 +35,29 @@ export default function Follower() {
 
   return (
     <>
-    <ScreenTemplate>
-      <View style={styles.container}>
-        <View style={{width:'100%'}}>
-          <Text style={[styles.field, {color: colorScheme.text}]}>Follower Screen</Text>
-          <Button
-            label='Show Toast'
-            color={colors.lightPurple}
-            onPress={onShowToastPress}
-          />
-          <Button
-            label='Show Snackbar'
-            color={colors.purple}
-            onPress={onShowSnackbarPress}
-          />
+      <ScreenTemplate>
+        <View style={styles.container}>
+          <View style={{ width: '100%' }}>
+            <Text style={[styles.field, { color: colorScheme.text }]}>Follower Screen</Text>
+            <Button
+              label="Show Toast"
+              color={colors.lightPurple}
+              onPress={onShowToastPress}
+            />
+            <Button
+              label="Show Snackbar"
+              color={colors.purple}
+              onPress={onShowSnackbarPress}
+            />
+          </View>
         </View>
-      </View>
-    </ScreenTemplate>
-    <ShowSnackbar
-      visible={visible}
-      onDismissSnackBar={onDismissSnackBar}
-      title='Hello 👋'
-      duration={3000}
-    />
+      </ScreenTemplate>
+      <ShowSnackbar
+        visible={visible}
+        onDismissSnackBar={onDismissSnackBar}
+        title="Hello 👋"
+        duration={3000}
+      />
     </>
   )
 }

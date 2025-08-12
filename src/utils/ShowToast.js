@@ -1,15 +1,15 @@
-import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
-import { fontSize, colors } from '../theme';
+import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message'
+import { fontSize, colors } from '../theme'
 
-const showToast = ({title, body, isDark}) => {
+const showToast = ({ title, body, isDark }) => {
   Toast.show({
     type: 'success',
     text1: title,
     text2: body,
     props: {
-      isDark
-    }
-  });
+      isDark,
+    },
+  })
 }
 
 const toastConfig = {
@@ -20,27 +20,27 @@ const toastConfig = {
   success: (props) => {
     const { isDark } = props.props
     const styles = {
-      backgroundColor: isDark?colors.darkInput: colors.white,
-      text1Color: isDark?colors.white: colors.black,
-      text2Color: isDark?colors.lightyellow: colors.darkPurple
+      backgroundColor: isDark ? colors.darkInput : colors.white,
+      text1Color: isDark ? colors.white : colors.black,
+      text2Color: isDark ? colors.lightyellow : colors.darkPurple,
     }
     return (
       <BaseToast
         {...props}
-        style={{borderLeftColor: colors.primary}}
+        style={{ borderLeftColor: colors.primary }}
         contentContainerStyle={{
           paddingHorizontal: 15,
-          backgroundColor: styles.backgroundColor
+          backgroundColor: styles.backgroundColor,
         }}
         text1Style={{
           fontSize: fontSize.middle,
           fontWeight: '400',
-          color: styles.text1Color
+          color: styles.text1Color,
         }}
         text2Style={{
           fontSize: fontSize.small,
           fontWeight: '400',
-          color: styles.text2Color
+          color: styles.text2Color,
         }}
       />
     )
@@ -53,10 +53,10 @@ const toastConfig = {
     <ErrorToast
       {...props}
       text1Style={{
-        fontSize: 17
+        fontSize: 17,
       }}
       text2Style={{
-        fontSize: 15
+        fontSize: 15,
       }}
     />
   ),
@@ -72,7 +72,7 @@ const toastConfig = {
       <Text>{text1}</Text>
       <Text>{props.uuid}</Text>
     </View>
-  )
-};
+  ),
+}
 
 export { showToast, toastConfig }
