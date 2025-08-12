@@ -10,6 +10,7 @@ import Detail from '../../../scenes/detail'
 import Blank from '../../../scenes/blank'
 import Voice from '../../../scenes/voice'
 import TextChat from '../../../scenes/text'
+import Box from '../../../scenes/box'
 
 const Stack = createStackNavigator()
 
@@ -64,6 +65,14 @@ export const HomeNavigator = () => {
               options={{ 
                 title: '文字对话',
                 headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
+              }}
+            />
+            <Stack.Screen
+              name="Box"
+              component={Box}
+              options={{
+                title: 'Box',
+                headerBackground: scheme === 'dark' ? null : () => <HeaderStyle />,
               }}
             />
           </Stack.Navigator>

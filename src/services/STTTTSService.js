@@ -647,7 +647,7 @@ class STTTTSService {
 
       // 尝试多种编码格式，直到成功
       const encodingOptions = []
-      
+
       // 为M4A文件优先尝试自动检测（不指定encoding）
       if (fileExt === 'm4a') {
         encodingOptions.push({}) // 自动检测

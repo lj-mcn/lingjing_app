@@ -174,6 +174,11 @@ export default function Home() {
                 onPress={() => onNotificationPress()}
                 disable={!token}
               />
+              <Button
+                label="Go to Box"
+                color={colors.secondary}
+                onPress={() => navigation.navigate('Box')}
+              />
               <View style={styles.navigationContainer}>
                 <TouchableOpacity style={styles.navButton} onPress={onLeftButtonPress}>
                   <Image
