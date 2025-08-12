@@ -11,6 +11,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { colors, fontSize } from '../../theme'
 import { UserDataContext } from '../../context/UserDataContext'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
+import { useAppFlow } from '../../context/AppFlowContext'
 import { sendNotification } from '../../utils/SendNotification'
 import { getKilobyteSize } from '../../utils/functions'
 
@@ -20,6 +21,7 @@ export default function Home() {
   const [showMenu, setShowMenu] = useState(false)
   const { userData } = useContext(UserDataContext)
   const { scheme } = useContext(ColorSchemeContext)
+  const { resetAppFlow } = useAppFlow()
   const isDark = scheme === 'dark'
   const colorScheme = {
     content: isDark? styles.darkContent : styles.lightContent,
@@ -75,6 +77,11 @@ export default function Home() {
 
   const headerButtonPress = () => {
     alert('Tapped header button')
+  }
+
+  const handleBackToVillage = () => {
+    // 重置应用流程状态，回到提示弹窗
+    resetAppFlow()
   }
 
   useEffect(() => {
@@ -188,6 +195,7 @@ export default function Home() {
         visible={showMenu}
         onClose={() => setShowMenu(false)}
         isDark={isDark}
+        onBackToVillage={handleBackToVillage}
       />
     </ScreenTemplate>
   )

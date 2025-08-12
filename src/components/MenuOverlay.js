@@ -4,7 +4,7 @@ import { colors, fontSize } from '../theme'
 
 const { width, height } = Dimensions.get('window')
 
-const MenuOverlay = ({ visible, onClose, isDark }) => {
+const MenuOverlay = ({ visible, onClose, isDark, onBackToVillage }) => {
   const colorScheme = {
     text: isDark ? colors.white : colors.primaryText,
     background: isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)',
@@ -27,7 +27,10 @@ const MenuOverlay = ({ visible, onClose, isDark }) => {
     // 这里可以根据不同的action执行不同的导航或功能
     switch (action) {
       case 'backToVillage':
-        // 导航到垃圾村
+        // 重新开始流程：提示弹窗 → 视频 → 主页
+        if (onBackToVillage) {
+          onBackToVillage()
+        }
         break
       case 'openBlindBox':
         // 打开盲盒功能
