@@ -2,6 +2,11 @@
 
 <a href="https://www.buymeacoffee.com/votepurchase" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
+## 新功能
+- 🎬 嘎巴龙数字人集成
+- 🔊 WebSocket语音通信
+- 🤖 STT-LLM-TTS完整流程
+
 ## Screens
 
 <img src='https://github.com/kiyohken2000/ReactNative-Expo-Firebase-Boilerplate-v2/blob/master/__DELELE_ME__/img1.jpg' width='80%'>
@@ -510,3 +515,4 @@ eas update:configure
 ## Licence
 
 This project is available under the MIT license. See the [LICENSE](https://github.com/kiyohken2000/ReactNative-Expo-Firebase-Boilerplate-v2/blob/master/LICENSE) file for more info.
+
