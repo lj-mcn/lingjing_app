@@ -1,0 +1,23 @@
+server:
+  host: "0.0.0.0"
+  port: 8000
+
+models:
+  sencevoice_model_path: "/path/to/SenseVoice"
+  llm_model_path: "/path/to/Qwen2.5"
+  sv_model_path: "/path/to/cam++"
+
+features:
+  enable_kws: true
+  enable_sv: true
+  kws_keyword: "ni hao xiao qian"
+  sv_threshold: 0.35
+
+paths:
+  sv_enroll_dir: "./SpeakerVerification_DIR/enroll_wav/"
+  output_dir: "./output"
+
+audio:
+  sample_rate: 16000
+  channels: 1
+  bit_depth: 16

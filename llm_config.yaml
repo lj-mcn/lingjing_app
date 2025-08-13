@@ -1,0 +1,43 @@
+health_check:
+  enabled: true
+  interval: 30
+  max_failures: 5
+  timeout: 5
+request:
+  default_system_prompt: 你是一个友好的AI助手。
+  max_tokens: 512
+  request_timeout: 30.0
+  temperature: 0.7
+retry:
+  exponential_backoff: true
+  jitter: true
+  max_retries: 10
+  max_retry_interval: 60
+  retry_interval: 3
+servers:
+- description: 主要的LLM服务器
+  enabled: true
+  name: 主服务器
+  priority: 1
+  url: ws://192.168.43.119:8000
+- description: 第一个备用服务器
+  enabled: true
+  name: 备用服务器1
+  priority: 2
+  url: ws://localhost:8000
+- description: 第二个备用服务器
+  enabled: true
+  name: 备用服务器2
+  priority: 3
+  url: ws://127.0.0.1:8000
+- description: 本地开发服务器
+  enabled: true
+  name: 本地服务器
+  priority: 4
+  url: ws://localhost:8000
+websocket:
+  compression: false
+  max_message_size: 1048576
+  ping_interval: 20
+  ping_timeout: 10
+  timeout: 60
