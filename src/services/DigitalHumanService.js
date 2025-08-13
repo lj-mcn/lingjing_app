@@ -2,20 +2,14 @@ import webSocketService from './WebSocketService'
 import audioService from './AudioService'
 import responseLLMService from './ResponseLLMService'
 import sttTtsService from './STTTTSService'
-<<<<<<< HEAD
-=======
 import senceVoiceService from './SenceVoiceService'
->>>>>>> 813-llm
 import llmConfig from '../config/llmConfig'
 
 class DigitalHumanService {
   constructor() {
     this.isConnected = false
     this.isConversing = false
-<<<<<<< HEAD
-=======
     this.useSenceVoice = false // 是否使用SenceVoice服务
->>>>>>> 813-llm
     this.conversationCallbacks = {
       onStart: null,
       onEnd: null,
@@ -25,10 +19,7 @@ class DigitalHumanService {
     }
 
     this.setupWebSocketCallbacks()
-<<<<<<< HEAD
-=======
     this.setupSenceVoiceCallbacks()
->>>>>>> 813-llm
   }
 
   setupWebSocketCallbacks() {
@@ -53,11 +44,6 @@ class DigitalHumanService {
     })
   }
 
-<<<<<<< HEAD
-  async initialize(config = {}) {
-    try {
-      console.log('开始初始化数字人服务...')
-=======
   setupSenceVoiceCallbacks() {
     senceVoiceService.setCallbacks({
       onConnect: () => {
@@ -151,7 +137,6 @@ class DigitalHumanService {
           console.warn('SenceVoice服务连接失败，回退到传统模式:', error)
         }
       }
->>>>>>> 813-llm
 
       // 配置各个服务
       console.log('初始化ResponseLLM服务...')
@@ -250,8 +235,6 @@ class DigitalHumanService {
       }
 
       console.log(`✅ 语音对话已开始 (${recordingResult.mode}模式)`)
-<<<<<<< HEAD
-=======
       
       // 如果使用SenceVoice且需要声纹注册，给用户提示
       if (this.useSenceVoice && senceVoiceService.isEnrollmentRequired()) {
@@ -260,8 +243,6 @@ class DigitalHumanService {
         const keyword = senceVoiceService.getWakeupKeyword()
         this.notifyMessage('system', `请说出唤醒词: "${keyword}" 来激活语音助手`)
       }
-      
->>>>>>> 813-llm
       if (recordingResult.mode === 'simulation') {
         this.notifyMessage('system', '使用模拟录音模式，点击停止来模拟语音输入')
       }
@@ -291,8 +272,6 @@ class DigitalHumanService {
         throw new Error('录音失败')
       }
 
-<<<<<<< HEAD
-=======
       // 如果使用SenceVoice服务
       if (this.useSenceVoice && senceVoiceService.getConnectionStatus().isConnected) {
         try {
@@ -321,8 +300,6 @@ class DigitalHumanService {
       
       // 传统模式处理
       console.log('使用传统语音处理模式')
-      
->>>>>>> 813-llm
       // 语音转文字
       const sttResult = await sttTtsService.intelligentSTT(audioUri)
       if (!sttResult.success) {
@@ -535,11 +512,6 @@ class DigitalHumanService {
     return Math.max(1000, Math.min(duration, 30000))
   }
 
-<<<<<<< HEAD
-  // 获取状态
-  getStatus() {
-    return {
-=======
   // SenceVoice特定方法
   async resetSenceVoiceKeyword() {
     if (this.useSenceVoice && senceVoiceService.getConnectionStatus().isConnected) {
@@ -565,14 +537,10 @@ class DigitalHumanService {
   // 获取状态
   getStatus() {
     const baseStatus = {
->>>>>>> 813-llm
       isConnected: this.isConnected,
       isConversing: this.isConversing,
       audioStatus: audioService.getRecordingStatus(),
       wsConnected: webSocketService.isConnected(),
-<<<<<<< HEAD
-    }
-=======
       useSenceVoice: this.useSenceVoice
     }
 
@@ -581,7 +549,6 @@ class DigitalHumanService {
     }
 
     return baseStatus
->>>>>>> 813-llm
   }
 
   // 清理资源
@@ -591,14 +558,10 @@ class DigitalHumanService {
       await audioService.cleanup()
       webSocketService.disconnect()
       responseLLMService.cleanup()
-<<<<<<< HEAD
-=======
       
       if (this.useSenceVoice) {
         senceVoiceService.cleanup()
       }
-      
->>>>>>> 813-llm
       console.log('数字人服务清理完成')
     } catch (error) {
       console.error('数字人服务清理失败:', error)

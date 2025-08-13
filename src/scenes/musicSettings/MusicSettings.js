@@ -3,19 +3,6 @@ import {
   View, StyleSheet, Dimensions, TouchableOpacity, Text, ImageBackground,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-<<<<<<< HEAD
-
-const { width, height } = Dimensions.get('window')
-
-export default function MusicSettings({ route }) {
-  const { onMusicChoice } = route.params || {}
-
-  const handleMuteChoice = () => {
-    console.log('User chose to mute')
-    if (onMusicChoice) {
-      onMusicChoice('mute')
-    }
-=======
 import { useAppFlow } from '../../context/AppFlowContext'
 
 const { width, height } = Dimensions.get('window')
@@ -26,18 +13,11 @@ export default function MusicSettings() {
   const handleMuteChoice = () => {
     console.log('User chose to mute')
     markMusicSettingsCompleted()
->>>>>>> 813-llm
   }
 
   const handleOkChoice = () => {
     console.log('User chose OK for music')
-<<<<<<< HEAD
-    if (onMusicChoice) {
-      onMusicChoice('ok')
-    }
-=======
     markMusicSettingsCompleted()
->>>>>>> 813-llm
   }
 
   return (
