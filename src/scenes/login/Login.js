@@ -80,11 +80,7 @@ export default function Login() {
           autoCapitalize="none"
         />
         <Button
-<<<<<<< HEAD
-          label="Log in"
-=======
           label="登录"
->>>>>>> 813-llm
           color={colors.primary}
           onPress={() => onLoginPress()}
         />

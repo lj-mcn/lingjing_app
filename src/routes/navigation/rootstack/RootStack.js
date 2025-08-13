@@ -1,20 +1,14 @@
 import React, { useState, useContext, useEffect } from 'react'
 import { Platform } from 'react-native'
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack'
-<<<<<<< HEAD
 import * as Notifications from 'expo-notifications'
 import { setDoc, doc } from 'firebase/firestore'
 import * as Device from 'expo-device'
-=======
-// import * as Notifications from 'expo-notifications'
-// import { setDoc, doc } from 'firebase/firestore'
-// import * as Device from 'expo-device'
->>>>>>> 813-llm
 import TabNavigator from '../tabs/Tabs'
 import { ModalStacks } from '../stacks/ModalStacks/ModalStacks'
 import VideoPlayer from '../../../scenes/video'
 import MusicSettings from '../../../scenes/musicSettings'
-<<<<<<< HEAD
+import BlindBoxVideo from '../../../scenes/blindBox'
 import { firestore } from '../../../firebase/config'
 import { UserDataContext } from '../../../context/UserDataContext'
 import { useAppFlow } from '../../../context/AppFlowContext'
@@ -29,30 +23,12 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 })
-=======
-import BlindBoxVideo from '../../../scenes/blindBox'
-// import { firestore } from '../../../firebase/config'
-import { UserDataContext } from '../../../context/UserDataContext'
-import { useAppFlow } from '../../../context/AppFlowContext'
-// import { expoProjectId } from '../../../config'
-
-const Stack = createStackNavigator()
-
-// Notifications.setNotificationHandler({
-//   handleNotification: async () => ({
-//     shouldShowAlert: true,
-//     shouldPlaySound: true,
-//     shouldSetBadge: false,
-//   }),
-// })
->>>>>>> 813-llm
 
 export default function RootStack() {
   const { userData } = useContext(UserDataContext)
   const { videoWatched, musicSettingsCompleted, markVideoWatched, markMusicSettingsCompleted } = useAppFlow()
   const isIos = Platform.OS === 'ios'
 
-<<<<<<< HEAD
   useEffect(() => {
     (async () => {
       const { isDevice } = Device
@@ -87,44 +63,8 @@ export default function RootStack() {
 
   const handleMusicChoice = (choice) => {
     console.log('Music choice:', choice)
-    // 用户选择后进入视频播放阶段
     markMusicSettingsCompleted()
   }
-=======
-  // Commented out for Expo Go compatibility (SDK 53+)
-  // useEffect(() => {
-  //   (async () => {
-  //     const { isDevice } = Device
-  //     if (!isDevice) return
-  //     console.log('get push token')
-  //     const { status: existingStatus } = await Notifications.getPermissionsAsync()
-  //     let finalStatus = existingStatus
-  //     if (existingStatus !== 'granted') {
-  //       const { status } = await Notifications.requestPermissionsAsync()
-  //       finalStatus = status
-  //     }
-  //     if (finalStatus !== 'granted') {
-  //       return
-  //     }
-  //     const token = await Notifications.getExpoPushTokenAsync({
-  //       projectId: expoProjectId,
-  //     })
-  //     const tokensRef = doc(firestore, 'tokens', userData.id)
-  //     await setDoc(tokensRef, {
-  //       token: token.data,
-  //       id: userData.id,
-  //     })
-  //   })()
-  // }, [userData])
-
-  // useEffect(() => {
-  //   const subscription = Notifications.addNotificationReceivedListener((notification) => {
-  //     console.log(notification.request.content)
-  //   })
-  //   return () => subscription.remove()
-  // }, [])
-
->>>>>>> 813-llm
 
   return (
     <Stack.Navigator
@@ -132,7 +72,6 @@ export default function RootStack() {
         headerShown: false,
       }}
     >
-<<<<<<< HEAD
       {!videoWatched ? (
         <Stack.Screen
           name="IntroVideo"
@@ -144,17 +83,6 @@ export default function RootStack() {
           name="MusicSettings"
           component={MusicSettings}
           initialParams={{ onMusicChoice: handleMusicChoice }}
-=======
-      {!musicSettingsCompleted ? (
-        <Stack.Screen
-          name="MusicSettings"
-          component={MusicSettings}
-        />
-      ) : !videoWatched ? (
-        <Stack.Screen
-          name="IntroVideo"
-          component={VideoPlayer}
->>>>>>> 813-llm
         />
       ) : (
         <>
@@ -176,8 +104,6 @@ export default function RootStack() {
               name="ModalStacks"
               component={ModalStacks}
             />
-<<<<<<< HEAD
-=======
             <Stack.Screen
               name="BlindBoxVideo"
               component={BlindBoxVideo}
@@ -186,7 +112,6 @@ export default function RootStack() {
               name="VillageVideo"
               component={VideoPlayer}
             />
->>>>>>> 813-llm
           </Stack.Group>
         </>
       )}

@@ -1,15 +1,3 @@
-<<<<<<< HEAD
-import React, { useRef, useEffect } from 'react'
-import { View, StyleSheet, Dimensions } from 'react-native'
-import { Video } from 'expo-av'
-import { StatusBar } from 'expo-status-bar'
-
-const { width, height } = Dimensions.get('window')
-
-export default function VideoPlayer({ route }) {
-  const videoRef = useRef(null)
-  const { onVideoEnd } = route.params || {}
-=======
 import React, { useRef, useEffect, useState } from 'react'
 import { View, StyleSheet, Dimensions, TouchableOpacity, Text, Modal } from 'react-native'
 import { Video } from 'expo-av'
@@ -30,7 +18,6 @@ export default function VideoPlayer() {
   const [showGabalonModal, setShowGabalonModal] = useState(false)
   const [playingGabalonVideo, setPlayingGabalonVideo] = useState(false)
   const [showGabalonReward, setShowGabalonReward] = useState(false)
->>>>>>> 813-llm
 
   useEffect(() => {
     // 自动播放视频
@@ -39,13 +26,6 @@ export default function VideoPlayer() {
     }
   }, [])
 
-<<<<<<< HEAD
-  const handleVideoEnd = () => {
-    console.log('Video finished, calling onVideoEnd callback')
-    if (onVideoEnd) {
-      onVideoEnd()
-    }
-=======
   useEffect(() => {
     // 当需要播放嘎巴龙视频时
     if (showGabalonModal) {
@@ -93,28 +73,11 @@ export default function VideoPlayer() {
     setShowStorePrompt(false)
     console.log('User skipped store, marking video as watched')
     markVideoWatched()
->>>>>>> 813-llm
   }
 
   return (
     <View style={styles.container}>
       <StatusBar hidden />
-<<<<<<< HEAD
-      <Video
-        ref={videoRef}
-        style={styles.video}
-        source={require('../../../assets/images/垃圾村漫游视频.mp4')}
-        useNativeControls={false}
-        resizeMode="cover"
-        isLooping={false}
-        shouldPlay
-        onPlaybackStatusUpdate={(status) => {
-          if (status.didJustFinish) {
-            handleVideoEnd()
-          }
-        }}
-      />
-=======
       {!playingStoreVideo && !playingGabalonVideo ? (
         <Video
           ref={videoRef}
@@ -203,7 +166,6 @@ export default function VideoPlayer() {
           </View>
         </View>
       </Modal>
->>>>>>> 813-llm
     </View>
   )
 }
@@ -219,8 +181,6 @@ const styles = StyleSheet.create({
     width,
     height,
   },
-<<<<<<< HEAD
-=======
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -285,5 +245,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
->>>>>>> 813-llm
 })
