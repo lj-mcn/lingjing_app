@@ -84,8 +84,18 @@ export default function Home() {
   }
 
   const handleBackToVillage = () => {
+<<<<<<< HEAD
     // 重置应用流程状态，回到提示弹窗
     resetAppFlow()
+=======
+    // 直接导航到垃圾村漫游视频，不显示商店提示
+    navigation.navigate('VillageVideo', { mode: 'returnToVillage' })
+  }
+
+  const handleOpenBlindBox = () => {
+    // 导航到盲盒视频页面
+    navigation.navigate('BlindBoxVideo')
+>>>>>>> 813-llm
   }
 
   useEffect(() => {
@@ -150,6 +160,7 @@ export default function Home() {
                     </>
                   ) : null}
               </View>
+<<<<<<< HEAD
               <Button
                 label="Go to Detail"
                 color={colors.primary}
@@ -179,6 +190,8 @@ export default function Home() {
                 color={colors.secondary}
                 onPress={() => navigation.navigate('Box')}
               />
+=======
+>>>>>>> 813-llm
               <View style={styles.navigationContainer}>
                 <TouchableOpacity style={styles.navButton} onPress={onLeftButtonPress}>
                   <Image
@@ -206,6 +219,10 @@ export default function Home() {
         onClose={() => setShowMenu(false)}
         isDark={isDark}
         onBackToVillage={handleBackToVillage}
+<<<<<<< HEAD
+=======
+        onOpenBlindBox={handleOpenBlindBox}
+>>>>>>> 813-llm
       />
     </ScreenTemplate>
   )

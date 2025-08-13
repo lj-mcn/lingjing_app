@@ -3,7 +3,10 @@ import { Text, View, ScrollView, StyleSheet, TouchableOpacity, Alert, Image } fr
 import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
+<<<<<<< HEAD
 import ConfigTester from '../../components/ConfigTester'
+=======
+>>>>>>> 813-llm
 import digitalHumanService from '../../services/DigitalHumanService'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
@@ -22,7 +25,10 @@ export default function Voice() {
 
   const [messages, setMessages] = useState([])
   const [isListening, setIsListening] = useState(false)
+<<<<<<< HEAD
   const [showConfigTester, setShowConfigTester] = useState(false)
+=======
+>>>>>>> 813-llm
   const [chatStarted, setChatStarted] = useState(false)
 
   useEffect(() => {
@@ -153,6 +159,7 @@ export default function Voice() {
           </>
         )}
 
+<<<<<<< HEAD
         {/* 测试按钮 */}
         <TouchableOpacity 
           style={styles.testButton}
@@ -165,6 +172,8 @@ export default function Voice() {
         {showConfigTester && (
           <ConfigTester onClose={() => setShowConfigTester(false)} />
         )}
+=======
+>>>>>>> 813-llm
       </ScrollView>
     </ScreenTemplate>
   )
@@ -300,6 +309,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.small,
     lineHeight: 20,
   },
+<<<<<<< HEAD
   testButton: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
     borderColor: '#007AFF',
@@ -316,6 +326,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
+=======
+>>>>>>> 813-llm
   paperBallContainer: {
     alignItems: 'center',
     paddingVertical: 40,

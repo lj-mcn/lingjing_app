@@ -142,10 +142,14 @@ class ResponseLLMService {
           conversation_history: conversationHistory,
           max_tokens: this.modelConfig.max_tokens,
 <<<<<<< HEAD
+<<<<<<< HEAD
           system_prompt: llmConfig.gabalong.systemPrompt,
 =======
           system_prompt: llmConfig.gabalong.system_prompt,
 >>>>>>> 20154c2bca66d554a948f7d8a44c83dcb96deaf8
+=======
+          system_prompt: llmConfig.gabalong.system_prompt,
+>>>>>>> 813-llm
         },
         timestamp: Date.now(),
       }

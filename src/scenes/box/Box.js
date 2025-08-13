@@ -11,9 +11,14 @@ const Box = () => {
   const [videoIndex, setVideoIndex] = useState(0)
 
   const videos = [
+<<<<<<< HEAD
     require('../../../assets/videos/1.mp4'),
     require('../../../assets/videos/2.mp4'),
     require('../../../assets/videos/3.mp4'),
+=======
+    require('../../../assets/images/1.mp4'),
+    require('../../../assets/images/3.mp4'),
+>>>>>>> 813-llm
   ]
 
   const playRandomVideo = () => {
@@ -30,9 +35,15 @@ const Box = () => {
 
   return (
     <View style={styles.container}>
+<<<<<<< HEAD
       <Text style={styles.titleText}>Box 页面</Text>
       <Text style={styles.infoText}>
         {currentVideo ? `当前视频: ${videoIndex + 1}.mp4` : '点击按钮播放随机视频'}
+=======
+      <Text style={styles.titleText}>盲盒页面</Text>
+      <Text style={styles.infoText}>
+        {currentVideo ? `当前视频: ${videoIndex === 0 ? '1.mp4' : '3.mp4'}` : '点击按钮开启盲盒'}
+>>>>>>> 813-llm
       </Text>
 
       {currentVideo && (
@@ -55,7 +66,11 @@ const Box = () => {
         style={styles.button}
         onPress={playRandomVideo}
       >
+<<<<<<< HEAD
         <Text style={styles.buttonText}>播放随机视频</Text>
+=======
+        <Text style={styles.buttonText}>开个盲盒</Text>
+>>>>>>> 813-llm
       </TouchableOpacity>
     </View>
   )

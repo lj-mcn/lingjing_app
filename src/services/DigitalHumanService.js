@@ -2,12 +2,20 @@ import webSocketService from './WebSocketService'
 import audioService from './AudioService'
 import responseLLMService from './ResponseLLMService'
 import sttTtsService from './STTTTSService'
+<<<<<<< HEAD
+=======
+import senceVoiceService from './SenceVoiceService'
+>>>>>>> 813-llm
 import llmConfig from '../config/llmConfig'
 
 class DigitalHumanService {
   constructor() {
     this.isConnected = false
     this.isConversing = false
+<<<<<<< HEAD
+=======
+    this.useSenceVoice = false // 是否使用SenceVoice服务
+>>>>>>> 813-llm
     this.conversationCallbacks = {
       onStart: null,
       onEnd: null,
@@ -17,6 +25,10 @@ class DigitalHumanService {
     }
 
     this.setupWebSocketCallbacks()
+<<<<<<< HEAD
+=======
+    this.setupSenceVoiceCallbacks()
+>>>>>>> 813-llm
   }
 
   setupWebSocketCallbacks() {
@@ -41,9 +53,105 @@ class DigitalHumanService {
     })
   }
 
+<<<<<<< HEAD
   async initialize(config = {}) {
     try {
       console.log('开始初始化数字人服务...')
+=======
+  setupSenceVoiceCallbacks() {
+    senceVoiceService.setCallbacks({
+      onConnect: () => {
+        console.log('SenceVoice服务已连接')
+        this.useSenceVoice = true
+        this.notifyStatusChange('sencevoice_connected')
+      },
+      onDisconnect: () => {
+        console.log('SenceVoice服务已断开')
+        this.useSenceVoice = false
+        this.notifyStatusChange('sencevoice_disconnected')
+      },
+      onError: (error) => {
+        this.notifyError(`SenceVoice错误: ${error.message}`)
+      },
+      onStatusUpdate: (status) => {
+        console.log('SenceVoice状态更新:', status)
+        this.notifyMessage('system', this.formatSenceVoiceStatus(status))
+      },
+      onVoiceResponse: (response) => {
+        this.handleSenceVoiceResponse(response)
+      },
+      onEnrollmentResponse: (response) => {
+        this.handleEnrollmentResponse(response)
+      }
+    })
+  }
+
+  formatSenceVoiceStatus(status) {
+    const features = []
+    if (status.kws_enabled) {
+      features.push(`关键词唤醒: ${status.kws_activated ? '已激活' : '未激活'} (${status.kws_keyword})`)
+    }
+    if (status.sv_enabled) {
+      features.push(`声纹识别: ${status.sv_enrolled ? '已注册' : '未注册'}`)
+    }
+    return `SenceVoice服务状态:\n${features.join('\n')}`
+  }
+
+  handleSenceVoiceResponse(response) {
+    if (response.success) {
+      console.log('用户说:', response.asr_result)
+      console.log('AI回复:', response.llm_response)
+      
+      this.notifyMessage('user', response.asr_result)
+      this.notifyMessage('assistant', response.llm_response)
+      
+      if (response.response_type === 'voice_chat_success') {
+        this.notifyStatusChange('speaking')
+        // TTS音频已在SenceVoiceService中自动播放
+        setTimeout(() => {
+          this.notifyStatusChange('idle')
+        }, this.estimateSpeechDuration(response.llm_response))
+      }
+    } else {
+      console.error('SenceVoice响应错误:', response.error)
+      this.notifyError(response.message || response.error)
+      
+      // 显示ASR结果（如果有）
+      if (response.asr_result) {
+        this.notifyMessage('user', response.asr_result)
+      }
+    }
+  }
+
+  handleEnrollmentResponse(response) {
+    if (response.success) {
+      console.log('声纹注册成功:', response.message)
+      this.notifyMessage('system', response.message)
+      this.notifyStatusChange('enrollment_success')
+    } else {
+      console.error('声纹注册失败:', response.error)
+      this.notifyError(response.message || response.error)
+      this.notifyStatusChange('enrollment_failed')
+    }
+  }
+
+  async initialize(config = {}) {
+    try {
+      console.log('开始初始化数字人服务...')
+      
+      // 尝试连接SenceVoice服务
+      if (config.sencevoice_url) {
+        try {
+          const senceVoiceConnected = await senceVoiceService.connect(config.sencevoice_url)
+          if (senceVoiceConnected) {
+            console.log('✅ SenceVoice服务连接成功')
+            this.useSenceVoice = true
+          }
+        } catch (error) {
+          console.warn('SenceVoice服务连接失败，回退到传统模式:', error)
+        }
+      }
+>>>>>>> 813-llm
 
       // 配置各个服务
       console.log('初始化ResponseLLM服务...')
@@ -142,6 +250,18 @@ class DigitalHumanService {
       }
 
       console.log(`✅ 语音对话已开始 (${recordingResult.mode}模式)`)
+<<<<<<< HEAD
+=======
+      
+      // 如果使用SenceVoice且需要声纹注册，给用户提示
+      if (this.useSenceVoice && senceVoiceService.isEnrollmentRequired()) {
+        this.notifyMessage('system', '检测到需要声纹注册，请录制至少3秒的音频用于注册')
+      } else if (this.useSenceVoice && senceVoiceService.isKeywordActivationRequired()) {
+        const keyword = senceVoiceService.getWakeupKeyword()
+        this.notifyMessage('system', `请说出唤醒词: "${keyword}" 来激活语音助手`)
+      }
+      
+>>>>>>> 813-llm
       if (recordingResult.mode === 'simulation') {
         this.notifyMessage('system', '使用模拟录音模式，点击停止来模拟语音输入')
       }
@@ -171,6 +291,38 @@ class DigitalHumanService {
         throw new Error('录音失败')
       }
 
+<<<<<<< HEAD
+=======
+      // 如果使用SenceVoice服务
+      if (this.useSenceVoice && senceVoiceService.getConnectionStatus().isConnected) {
+        try {
+          // 检查是否需要声纹注册
+          if (senceVoiceService.isEnrollmentRequired()) {
+            console.log('执行声纹注册...')
+            const enrollResult = await senceVoiceService.sendEnrollmentRequest(audioUri)
+            console.log('声纹注册结果:', enrollResult)
+            // 注册响应会通过回调处理
+          } else {
+            // 发送语音识别和对话请求
+            console.log('发送语音请求到SenceVoice...')
+            const voiceResult = await senceVoiceService.sendVoiceRequest(audioUri)
+            console.log('SenceVoice响应:', voiceResult)
+            // 语音响应会通过回调处理
+          }
+          
+          this.isConversing = false
+          this.notifyConversationEnd()
+          return true
+        } catch (senceVoiceError) {
+          console.warn('SenceVoice处理失败，回退到传统模式:', senceVoiceError)
+          this.notifyError(`SenceVoice处理失败: ${senceVoiceError.message}`)
+        }
+      }
+      
+      // 传统模式处理
+      console.log('使用传统语音处理模式')
+      
+>>>>>>> 813-llm
       // 语音转文字
       const sttResult = await sttTtsService.intelligentSTT(audioUri)
       if (!sttResult.success) {
@@ -383,14 +535,53 @@ class DigitalHumanService {
     return Math.max(1000, Math.min(duration, 30000))
   }
 
+<<<<<<< HEAD
   // 获取状态
   getStatus() {
     return {
+=======
+  // SenceVoice特定方法
+  async resetSenceVoiceKeyword() {
+    if (this.useSenceVoice && senceVoiceService.getConnectionStatus().isConnected) {
+      try {
+        await senceVoiceService.resetKeywordStatus()
+        this.notifyMessage('system', '关键词状态已重置')
+      } catch (error) {
+        this.notifyError(`重置关键词失败: ${error.message}`)
+      }
+    }
+  }
+
+  getSenceVoiceStatus() {
+    if (this.useSenceVoice) {
+      return {
+        connectionStatus: senceVoiceService.getConnectionStatus(),
+        serverStatus: senceVoiceService.getServerStatus()
+      }
+    }
+    return null
+  }
+
+  // 获取状态
+  getStatus() {
+    const baseStatus = {
+>>>>>>> 813-llm
       isConnected: this.isConnected,
       isConversing: this.isConversing,
       audioStatus: audioService.getRecordingStatus(),
       wsConnected: webSocketService.isConnected(),
+<<<<<<< HEAD
     }
+=======
+      useSenceVoice: this.useSenceVoice
+    }
+
+    if (this.useSenceVoice) {
+      baseStatus.senceVoice = this.getSenceVoiceStatus()
+    }
+
+    return baseStatus
+>>>>>>> 813-llm
   }
 
   // 清理资源
@@ -400,6 +591,14 @@ class DigitalHumanService {
       await audioService.cleanup()
       webSocketService.disconnect()
       responseLLMService.cleanup()
+<<<<<<< HEAD
+=======
+      
+      if (this.useSenceVoice) {
+        senceVoiceService.cleanup()
+      }
+      
+>>>>>>> 813-llm
       console.log('数字人服务清理完成')
     } catch (error) {
       console.error('数字人服务清理失败:', error)

@@ -4,7 +4,11 @@ import { colors, fontSize } from '../theme'
 
 const { width, height } = Dimensions.get('window')
 
+<<<<<<< HEAD
 const MenuOverlay = ({ visible, onClose, isDark, onBackToVillage }) => {
+=======
+const MenuOverlay = ({ visible, onClose, isDark, onBackToVillage, onOpenBlindBox }) => {
+>>>>>>> 813-llm
   const colorScheme = {
     text: isDark ? colors.white : colors.primaryText,
     background: isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)',
@@ -34,6 +38,12 @@ const MenuOverlay = ({ visible, onClose, isDark, onBackToVillage }) => {
         break
       case 'openBlindBox':
         // 打开盲盒功能
+<<<<<<< HEAD
+=======
+        if (onOpenBlindBox) {
+          onOpenBlindBox()
+        }
+>>>>>>> 813-llm
         break
       case 'goToChat':
         // 进入聊天页面

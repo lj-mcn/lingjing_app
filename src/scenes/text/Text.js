@@ -4,7 +4,10 @@ import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
 import Button from '../../components/Button'
+<<<<<<< HEAD
 import ConfigTester from '../../components/ConfigTester'
+=======
+>>>>>>> 813-llm
 import digitalHumanService from '../../services/DigitalHumanService'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
@@ -26,7 +29,10 @@ export default function TextChat() {
   const [messages, setMessages] = useState([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+<<<<<<< HEAD
   const [showConfigTester, setShowConfigTester] = useState(false)
+=======
+>>>>>>> 813-llm
   const [chatStarted, setChatStarted] = useState(false)
 
   useEffect(() => {
@@ -230,6 +236,7 @@ export default function TextChat() {
             </>
           )}
 
+<<<<<<< HEAD
           {/* 测试按钮 */}
           <TouchableOpacity 
             style={styles.testButton}
@@ -242,6 +249,8 @@ export default function TextChat() {
           {showConfigTester && (
             <ConfigTester onClose={() => setShowConfigTester(false)} />
           )}
+=======
+>>>>>>> 813-llm
         </View>
       </KeyboardAvoidingView>
     </ScreenTemplate>
@@ -378,6 +387,7 @@ const styles = StyleSheet.create({
     minWidth: 60,
     paddingVertical: 8,
   },
+<<<<<<< HEAD
   testButton: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
     borderColor: '#007AFF',
@@ -394,6 +404,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
+=======
+>>>>>>> 813-llm
   paperBallContainer: {
     alignItems: 'center',
     paddingVertical: 40,
