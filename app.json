@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "expo-github",
+    "slug": "expo-github",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo-sm.png",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "newArchEnabled": true,
+
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "reactnative.expo.firebase.boilerplate",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Use the photo library to change your avatar.",
+        "NSMicrophoneUsageDescription": "This app needs access to microphone to record voice messages for the digital human interaction."
+      },
+      "userInterfaceStyle": "automatic"
+    },
+    "android": {
+      "package": "reactnative.expo.firebase.boilerplate",
+      "versionCode": 1,
+      "userInterfaceStyle": "automatic",
+      "permissions": [
+        "VIBRATE",
+        "CAMERA",
+        "RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/logo-sm.png",
+      "bundler": "metro"
+    },
+    "description": "",
+    "plugins": [
+      "expo-font",
+      "expo-asset"
+    ]
+    
+  }
+}
