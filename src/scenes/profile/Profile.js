@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react'
 import {
   Text, View, StyleSheet, ScrollView,
 } from 'react-native'
+import { BlurView } from 'expo-blur'
 import { Avatar } from '@rneui/themed'
 import Dialog from 'react-native-dialog'
 import Spinner from 'react-native-loading-spinner-overlay'
@@ -81,26 +82,36 @@ export default function Profile() {
 
   return (
     <ScreenTemplate>
-      <ScrollView style={styles.main}>
+      <View style={styles.main}>
         <View style={styles.avatar}>
           <Avatar
-            size="xlarge"
+            size="large"
             rounded
             source={{ uri: userData.avatar }}
           />
         </View>
-        <Text style={[styles.field, { color: colorScheme.text }]}>Name:</Text>
-        <Text style={[styles.title, { color: colorScheme.text }]}>{userData.fullName}</Text>
-        <Text style={[styles.field, { color: colorScheme.text }]}>Mail:</Text>
-        <Text style={[styles.title, { color: colorScheme.text }]}>{userData.email}</Text>
+        <View style={styles.infoContainer}>
+          <Text style={[styles.fieldLabel, { color: colorScheme.text }]}>Name:</Text>
+          <BlurView intensity={55} tint="regular" style={styles.textBackground}>
+            <Text style={[styles.fieldValue, styles.timesFont, { color: colorScheme.text }]}>{userData.fullName}</Text>
+          </BlurView>
+          <Text style={[styles.fieldLabel, { color: colorScheme.text }]}>Mail:</Text>
+          <BlurView intensity={55} tint="regular" style={styles.textBackground}>
+            <Text style={[styles.fieldValue, styles.timesFont, { color: colorScheme.text }]}>{userData.email}</Text>
+          </BlurView>
+        </View>
         <Button
           label="Edit"
-          color={colors.primary}
+          color="#FFB366"
+          style3D={true}
+          compact={true}
           onPress={goDetail}
         />
         <Button
           label="Open Modal"
-          color={colors.tertiary}
+          color="#FF8C42"
+          style3D={true}
+          compact={true}
           onPress={() => {
             navigation.navigate('ModalStacks', {
               screen: 'Post',
@@ -113,13 +124,15 @@ export default function Profile() {
         />
         <Button
           label="Delete account"
-          color={colors.secondary}
+          color="#E65100"
+          style3D={true}
+          compact={true}
           onPress={showDialog}
         />
         <View style={styles.footerView}>
           <Text onPress={onSignOutPress} style={styles.footerLink}>Sign out</Text>
         </View>
-      </ScrollView>
+      </View>
       <Dialog.Container visible={visible}>
         <Dialog.Title>Delete account</Dialog.Title>
         <Dialog.Description>
@@ -141,28 +154,49 @@ const styles = StyleSheet.create({
   main: {
     flex: 1,
     width: '100%',
+    justifyContent: 'space-evenly',
+    paddingVertical: 10,
   },
-  title: {
-    fontSize: fontSize.xxxLarge,
-    marginBottom: 20,
-    textAlign: 'center',
+  infoContainer: {
+    marginHorizontal: 20,
+    marginVertical: 15,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
   },
-  field: {
+  textBackground: {
+    marginVertical: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
+  },
+  fieldLabel: {
     fontSize: fontSize.middle,
     textAlign: 'center',
+    marginBottom: 4,
+    fontWeight: 'bold',
+    fontStyle: 'italic',
+  },
+  fieldValue: {
+    fontSize: fontSize.xLarge,
+    marginBottom: 8,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  timesFont: {
+    fontFamily: 'Times New Roman',
   },
   avatar: {
-    margin: 30,
+    marginVertical: 10,
     alignSelf: 'center',
   },
   footerView: {
-    flex: 1,
     alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 20,
+    marginTop: 10,
   },
   footerLink: {
-    color: colors.blueLight,
+    color: '#000000',
     fontWeight: 'bold',
     fontSize: fontSize.large,
   },

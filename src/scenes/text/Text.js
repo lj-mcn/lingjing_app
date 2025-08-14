@@ -1,5 +1,9 @@
-import React, { useEffect, useState, useContext, useRef } from 'react'
-import { Text, View, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native'
+import React, {
+  useEffect, useState, useContext, useRef,
+} from 'react'
+import {
+  Text, View, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image,
+} from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
@@ -19,7 +23,7 @@ export default function TextChat() {
     text: isDark ? colors.white : colors.primaryText,
     background: isDark ? colors.black : colors.white,
     inputBackground: isDark ? '#333' : '#f5f5f5',
-    cardBackground: isDark ? '#2a2a2a' : '#ffffff'
+    cardBackground: isDark ? '#2a2a2a' : '#ffffff',
   }
 
   const [messages, setMessages] = useState([])
@@ -43,36 +47,36 @@ export default function TextChat() {
   }
 
   const handleMessage = (message) => {
-    setMessages(prev => [...prev, message])
+    setMessages((prev) => [...prev, message])
   }
 
   const handleSendText = async () => {
     if (inputText.trim().length === 0) return
-    
+
     const userMessage = inputText.trim()
     setInputText('')
     setIsTyping(true)
-    
+
     // 添加用户消息到对话历史
     const newUserMessage = {
       role: 'user',
       message: userMessage,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString(),
     }
-    setMessages(prev => [...prev, newUserMessage])
-    
+    setMessages((prev) => [...prev, newUserMessage])
+
     try {
       // 发送文本消息给数字人
       const result = await digitalHumanService.sendTextMessage(userMessage)
       if (!result.success) {
-        Alert.alert('错误', '发送消息失败: ' + result.error)
+        Alert.alert('错误', `发送消息失败: ${result.error}`)
         // 添加错误消息
         const errorMessage = {
           role: 'assistant',
           message: '抱歉，我现在无法回复您的消息，请稍后再试。',
-          timestamp: new Date().toLocaleTimeString()
+          timestamp: new Date().toLocaleTimeString(),
         }
-        setMessages(prev => [...prev, errorMessage])
+        setMessages((prev) => [...prev, errorMessage])
       }
     } catch (error) {
       console.error('发送消息错误:', error)
@@ -88,18 +92,18 @@ export default function TextChat() {
       '确定要清空所有对话记录吗？',
       [
         { text: '取消', style: 'cancel' },
-        { 
-          text: '确定', 
+        {
+          text: '确定',
           onPress: () => setMessages([]),
-          style: 'destructive'
-        }
-      ]
+          style: 'destructive',
+        },
+      ],
     )
   }
 
   return (
     <ScreenTemplate>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
@@ -116,15 +120,15 @@ export default function TextChat() {
 
           {/* 数字人区域 */}
           <View style={styles.avatarContainer}>
-            <DigitalAvatar 
+            <DigitalAvatar
               style={styles.avatar}
               videoStyle={styles.avatarVideo}
               onMessage={handleMessage}
               enableInteraction={chatStarted}
             />
             <Text style={[styles.avatarStatus, { color: colorScheme.text }]}>
-              {!chatStarted ? '😊 点击纸团开始对话' :
-               isTyping ? '💭 正在思考...' : '😊 准备聊天'}
+              {!chatStarted ? '😊 点击纸团开始对话'
+                : isTyping ? '💭 正在思考...' : '😊 准备聊天'}
             </Text>
           </View>
 
@@ -158,8 +162,8 @@ export default function TextChat() {
                     </TouchableOpacity>
                   )}
                 </View>
-                
-                <ScrollView 
+
+                <ScrollView
                   ref={scrollViewRef}
                   style={styles.messagesContainer}
                   showsVerticalScrollIndicator={false}
@@ -170,21 +174,26 @@ export default function TextChat() {
                     </Text>
                   ) : (
                     messages.map((msg, index) => (
-                      <View key={index} style={[
-                        styles.messageItem,
-                        msg.role === 'user' ? styles.userMessage : styles.assistantMessage
-                      ]}>
+                      <View
+                        key={index}
+                        style={[
+                          styles.messageItem,
+                          msg.role === 'user' ? styles.userMessage : styles.assistantMessage,
+                        ]}
+                      >
                         <Text style={[
                           styles.messageText,
-                          { color: msg.role === 'user' ? colors.white : colorScheme.text }
-                        ]}>
+                          { color: msg.role === 'user' ? colors.white : colorScheme.text },
+                        ]}
+                        >
                           {msg.role === 'user' ? '👤 我：' : '🐉 嘎巴龙：'}{msg.message}
                         </Text>
                         {msg.timestamp && (
                           <Text style={[
                             styles.messageTime,
-                            { color: msg.role === 'user' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)' }
-                          ]}>
+                            { color: msg.role === 'user' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)' },
+                          ]}
+                          >
                             {msg.timestamp}
                           </Text>
                         )}
@@ -207,13 +216,13 @@ export default function TextChat() {
                   style={[styles.textInput, {
                     backgroundColor: colorScheme.inputBackground,
                     color: colorScheme.text,
-                    borderColor: isDark ? '#555' : '#ddd'
+                    borderColor: isDark ? '#555' : '#ddd',
                   }]}
                   placeholder="输入消息..."
                   placeholderTextColor={isDark ? '#999' : '#666'}
                   value={inputText}
                   onChangeText={setInputText}
-                  multiline={true}
+                  multiline
                   maxLength={500}
                   editable={!isTyping}
                 />

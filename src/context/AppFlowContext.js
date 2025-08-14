@@ -25,8 +25,9 @@ export const AppFlowProvider = ({ children }) => {
       musicSettingsCompleted,
       resetAppFlow,
       markVideoWatched,
-      markMusicSettingsCompleted
-    }}>
+      markMusicSettingsCompleted,
+    }}
+    >
       {children}
     </AppFlowContext.Provider>
   )

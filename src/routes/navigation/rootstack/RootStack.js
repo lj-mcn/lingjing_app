@@ -26,7 +26,9 @@ Notifications.setNotificationHandler({
 
 export default function RootStack() {
   const { userData } = useContext(UserDataContext)
-  const { videoWatched, musicSettingsCompleted, markVideoWatched, markMusicSettingsCompleted } = useAppFlow()
+  const {
+    videoWatched, musicSettingsCompleted, markVideoWatched, markMusicSettingsCompleted,
+  } = useAppFlow()
   const isIos = Platform.OS === 'ios'
 
   useEffect(() => {

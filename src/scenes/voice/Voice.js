@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react'
-import { Text, View, ScrollView, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native'
+import {
+  Text, View, ScrollView, StyleSheet, TouchableOpacity, Alert, Image,
+} from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
@@ -16,7 +18,7 @@ export default function Voice() {
   const colorScheme = {
     text: isDark ? colors.white : colors.primaryText,
     background: isDark ? colors.black : colors.white,
-    cardBackground: isDark ? '#333' : '#f8f9fa'
+    cardBackground: isDark ? '#333' : '#f8f9fa',
   }
 
   const [messages, setMessages] = useState([])
@@ -28,7 +30,7 @@ export default function Voice() {
   }, [])
 
   const handleMessage = (message) => {
-    setMessages(prev => [...prev, message])
+    setMessages((prev) => [...prev, message])
   }
 
   const startChat = () => {
@@ -39,7 +41,7 @@ export default function Voice() {
     setIsListening(true)
     const result = await digitalHumanService.startVoiceRecording()
     if (!result.success) {
-      Alert.alert('错误', '无法启动语音录制: ' + result.error)
+      Alert.alert('错误', `无法启动语音录制: ${result.error}`)
       setIsListening(false)
     }
   }
@@ -48,7 +50,7 @@ export default function Voice() {
     setIsListening(false)
     const result = await digitalHumanService.stopVoiceRecording()
     if (!result.success) {
-      Alert.alert('错误', '语音处理失败: ' + result.error)
+      Alert.alert('错误', `语音处理失败: ${result.error}`)
     }
   }
 
@@ -68,19 +70,20 @@ export default function Voice() {
         {/* 数字人区域 */}
         <View style={styles.avatarContainer}>
           <View style={[styles.backgroundDecoration, {
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'
-          }]} />
-          
-          <DigitalAvatar 
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+          }]}
+          />
+
+          <DigitalAvatar
             style={styles.avatar}
             videoStyle={styles.avatarVideo}
             onMessage={handleMessage}
             enableInteraction={chatStarted}
           />
-          
+
           <Text style={[styles.avatarStatus, { color: colorScheme.text }]}>
-            {!chatStarted ? '😊 点击纸团开始对话' : 
-             isListening ? '🎧 正在聆听...' : '💤 等待语音输入'}
+            {!chatStarted ? '😊 点击纸团开始对话'
+              : isListening ? '🎧 正在聆听...' : '💤 等待语音输入'}
           </Text>
         </View>
 
@@ -109,7 +112,7 @@ export default function Voice() {
               <TouchableOpacity
                 style={[
                   styles.voiceButton,
-                  isListening ? styles.voiceButtonActive : styles.voiceButtonInactive
+                  isListening ? styles.voiceButtonActive : styles.voiceButtonInactive,
                 ]}
                 onPress={isListening ? stopVoiceRecording : startVoiceRecording}
                 activeOpacity={0.8}
@@ -133,14 +136,18 @@ export default function Voice() {
                   </Text>
                 ) : (
                   messages.map((msg, index) => (
-                    <View key={index} style={[
-                      styles.messageItem,
-                      msg.role === 'user' ? styles.userMessage : styles.assistantMessage
-                    ]}>
+                    <View
+                      key={index}
+                      style={[
+                        styles.messageItem,
+                        msg.role === 'user' ? styles.userMessage : styles.assistantMessage,
+                      ]}
+                    >
                       <Text style={[
                         styles.messageText,
-                        { color: msg.role === 'user' ? colors.white : colorScheme.text }
-                      ]}>
+                        { color: msg.role === 'user' ? colors.white : colorScheme.text },
+                      ]}
+                      >
                         {msg.role === 'user' ? '👤 我：' : '🐉 嘎巴龙：'}{msg.message}
                       </Text>
                     </View>

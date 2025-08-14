@@ -2,55 +2,54 @@ import React, {
   useEffect, useState, useContext, useLayoutEffect,
 } from 'react'
 import {
-  Text, View, ScrollView, StyleSheet, TouchableOpacity, Image,
+  Text, View, ScrollView, StyleSheet, TouchableOpacity, Image, Animated, ImageBackground,
 } from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useNavigation } from '@react-navigation/native'
-import { doc, onSnapshot } from 'firebase/firestore'
-import IconButton from '../../components/IconButton'
-import ScreenTemplate from '../../components/ScreenTemplate'
-import Button from '../../components/Button'
 import MenuOverlay from '../../components/MenuOverlay'
-import { firestore } from '../../firebase/config'
-import { colors, fontSize } from '../../theme'
-import { UserDataContext } from '../../context/UserDataContext'
+import IconButton from '../../components/IconButton'
+import { colors } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
-import { useAppFlow } from '../../context/AppFlowContext'
-import { sendNotification } from '../../utils/SendNotification'
-import { getKilobyteSize } from '../../utils/functions'
 
 export default function Home() {
   const navigation = useNavigation()
-  const [token, setToken] = useState('')
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [weather] = useState({ temp: '22°C', condition: '晴朗' })
   const [showMenu, setShowMenu] = useState(false)
-  const { userData } = useContext(UserDataContext)
+  const [arrowOpacity] = useState(new Animated.Value(1))
+  const [navButtonScale] = useState(new Animated.Value(1))
   const { scheme } = useContext(ColorSchemeContext)
-  const { resetAppFlow } = useAppFlow()
   const isDark = scheme === 'dark'
   const colorScheme = {
-    content: isDark ? styles.darkContent : styles.lightContent,
+    background: isDark ? colors.black : colors.white,
     text: isDark ? colors.white : colors.primaryText,
   }
 
+  // 更新当前时间
   useEffect(() => {
-    const str = 'Hello, こんにちは!'
-    const kilobyteSize = getKilobyteSize({ str })
-    console.log({ str, kilobyteSize })
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+    return () => clearInterval(timer)
   }, [])
 
+  // 箭头忽明忽暗动画
   useEffect(() => {
-    const obj = {
-      name: 'name1',
-      age: 15,
+    const fadeAnimation = () => {
+      Animated.sequence([
+        Animated.timing(arrowOpacity, {
+          toValue: 0.3,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(arrowOpacity, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => fadeAnimation())
     }
-    const kilobyteSize = getKilobyteSize({ str: obj })
-    console.log({ obj, kilobyteSize })
-  }, [])
-
-  useEffect(() => {
-    const array = ['name1', 'name2', 'name3']
-    const kilobyteSize = getKilobyteSize({ str: array })
-    console.log({ array, kilobyteSize })
+    fadeAnimation()
   }, [])
 
   useLayoutEffect(() => {
@@ -93,36 +92,51 @@ export default function Home() {
     navigation.navigate('BlindBoxVideo')
   }
 
-  useEffect(() => {
-    const tokensRef = doc(firestore, 'tokens', userData.id)
-    const tokenListner = onSnapshot(tokensRef, (querySnapshot) => {
-      if (querySnapshot.exists) {
-        const data = querySnapshot.data()
-        setToken(data)
-      } else {
-        console.log('No such document!')
-      }
-    })
-    return () => tokenListner()
-  }, [])
-
-  const onNotificationPress = async () => {
-    const res = await sendNotification({
-      title: 'Hello',
-      body: 'This is some something 👋',
-      data: 'something data',
-      token: token.token,
-    })
-    console.log(res)
+  // 导航按钮颤抖效果
+  const triggerShakeAnimation = () => {
+    Animated.sequence([
+      Animated.timing(navButtonScale, {
+        toValue: 1.1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(navButtonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(navButtonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start()
   }
 
-  const onLeftButtonPress = () => {
+  const onLeftArrowPress = () => {
+    triggerShakeAnimation()
     navigation.navigate('Voice')
   }
 
-  const onRightButtonPress = () => {
+  const onRightArrowPress = () => {
+    triggerShakeAnimation()
     navigation.navigate('Text')
   }
+
+  const formatTime = (date) => date.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+
+  const formatDate = (date) => date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  })
+
 
   const swipeGesture = Gesture.Pan()
     .onEnd((event) => {
@@ -139,108 +153,112 @@ export default function Home() {
     })
 
   return (
-    <ScreenTemplate>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+    <ImageBackground 
+      source={require('../../../assets/images/background.png')}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      <GestureHandlerRootView style={styles.gestureContainer}>
         <GestureDetector gesture={swipeGesture}>
-          <View style={{ flex: 1 }}>
-            <ScrollView style={styles.main}>
-              <View style={colorScheme.content}>
-                <Text style={[styles.field, { color: colorScheme.text }]}>Mail:</Text>
-                <Text style={[styles.title, { color: colorScheme.text }]}>{userData.email}</Text>
-                {token
-                  ? (
-                    <>
-                      <Text style={[styles.field, { color: colorScheme.text }]}>Expo push token:</Text>
-                      <Text style={[styles.title, { color: colorScheme.text }]}>{token.token}</Text>
-                    </>
-                  ) : null}
+          <View style={styles.content}>
+            <ScrollView style={styles.main} showsVerticalScrollIndicator={false}>
+              {/* 时间天气信息块 */}
+              <View style={styles.infoContainer}>
+                <Text style={[styles.timeText, { color: colorScheme.text }]}>
+                  {formatTime(currentTime)}
+                </Text>
+                <Text style={[styles.dateText, { color: colorScheme.text }]}>
+                  {formatDate(currentTime)}
+                </Text>
+                <View style={styles.weatherContainer}>
+                  <Text style={[styles.weatherText, { color: colorScheme.text }]}>
+                    {weather.condition} {weather.temp}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.navigationContainer}>
-                <TouchableOpacity style={styles.navButton} onPress={onLeftButtonPress}>
-                  <Image
-                    source={require('../../../assets/images/左.png')}
-                    style={styles.navImage}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navButton} onPress={onRightButtonPress}>
-                  <Image
-                    source={require('../../../assets/images/右.png')}
-                    style={styles.navImage}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
+
+              {/* 导航箭头 */}
+              <View style={styles.arrowContainer}>
+                <Animated.View style={[styles.arrowWrapper, { opacity: arrowOpacity, transform: [{ scale: navButtonScale }] }]}>
+                  <TouchableOpacity onPress={onLeftArrowPress}>
+                    <Text style={[styles.arrowText, { color: colorScheme.text }]}>⬅️ 语音</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={[styles.arrowWrapper, { opacity: arrowOpacity, transform: [{ scale: navButtonScale }] }]}>
+                  <TouchableOpacity onPress={onRightArrowPress}>
+                    <Text style={[styles.arrowText, { color: colorScheme.text }]}>文字 ➡️</Text>
+                  </TouchableOpacity>
+                </Animated.View>
               </View>
+
             </ScrollView>
           </View>
         </GestureDetector>
       </GestureHandlerRootView>
-      
+
       {/* 菜单覆盖层 */}
-      <MenuOverlay 
+      <MenuOverlay
         visible={showMenu}
         onClose={() => setShowMenu(false)}
         isDark={isDark}
         onBackToVillage={handleBackToVillage}
         onOpenBlindBox={handleOpenBlindBox}
       />
-    </ScreenTemplate>
+    </ImageBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  lightContent: {
-    backgroundColor: colors.lightyellow,
-    padding: 20,
-    borderRadius: 5,
-    marginTop: 30,
-    marginLeft: 30,
-    marginRight: 30,
+  container: {
+    flex: 1,
   },
-  darkContent: {
-    backgroundColor: colors.gray,
-    padding: 20,
-    borderRadius: 5,
-    marginTop: 30,
-    marginLeft: 30,
-    marginRight: 30,
+  gestureContainer: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
   },
   main: {
     flex: 1,
-    width: '100%',
+    paddingHorizontal: 20,
   },
-  title: {
-    fontSize: fontSize.xxxLarge,
+  infoContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    marginTop: 60,
+  },
+  timeText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  dateText: {
+    fontSize: 18,
     marginBottom: 20,
-    textAlign: 'center',
+    opacity: 0.8,
   },
-  field: {
-    fontSize: fontSize.middle,
-    textAlign: 'center',
+  weatherContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(128, 128, 128, 0.1)',
   },
-  navigationContainer: {
+  weatherText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  arrowContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 50,
-    marginTop: 20,
-    marginBottom: 30,
+    paddingHorizontal: 40,
+    marginVertical: 30,
   },
-  navButton: {
-    padding: 15,
-    borderRadius: 10,
-    backgroundColor: colors.lightyellow,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+  arrowWrapper: {
+    alignItems: 'center',
   },
-  navImage: {
-    width: 40,
-    height: 40,
+  arrowText: {
+    fontSize: 24,
+    fontWeight: '600',
   },
   menuButton: {
     paddingLeft: 15,

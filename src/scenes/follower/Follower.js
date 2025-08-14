@@ -1,5 +1,7 @@
 import React, { useEffect, useContext, useState } from 'react'
-import { Text, View, StyleSheet, FlatList, TouchableOpacity } from 'react-native'
+import {
+  Text, View, StyleSheet, FlatList, TouchableOpacity,
+} from 'react-native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
@@ -13,7 +15,7 @@ export default function Follower() {
   const colorScheme = {
     text: isDark ? colors.white : colors.primaryText,
     background: isDark ? colors.black : colors.white,
-    cardBackground: isDark ? '#333' : '#f8f9fa'
+    cardBackground: isDark ? '#333' : '#f8f9fa',
   }
 
   const [followerList, setFollowerList] = useState([])
@@ -30,10 +32,18 @@ export default function Follower() {
       // 这里应该从服务器获取粉丝列表
       // 暂时使用模拟数据
       const mockData = [
-        { id: 1, name: '小明', email: 'xiaoming@example.com', avatar: '👤' },
-        { id: 2, name: '小红', email: 'xiaohong@example.com', avatar: '👤' },
-        { id: 3, name: '小刚', email: 'xiaogang@example.com', avatar: '👤' },
-        { id: 4, name: '小李', email: 'xiaoli@example.com', avatar: '👤' },
+        {
+          id: 1, name: '小明', email: 'xiaoming@example.com', avatar: '👤',
+        },
+        {
+          id: 2, name: '小红', email: 'xiaohong@example.com', avatar: '👤',
+        },
+        {
+          id: 3, name: '小刚', email: 'xiaogang@example.com', avatar: '👤',
+        },
+        {
+          id: 4, name: '小李', email: 'xiaoli@example.com', avatar: '👤',
+        },
       ]
       setFollowerList(mockData)
     } catch (error) {
