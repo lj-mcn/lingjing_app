@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react'
 import {
   View, StyleSheet, Dimensions, TouchableOpacity, Text, Modal,
 } from 'react-native'
-import { Video } from 'expo-av'
+import { Video, Audio } from 'expo-av'
 import { StatusBar } from 'expo-status-bar'
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { useAppFlow } from '../../context/AppFlowContext'
@@ -11,10 +11,15 @@ const { width, height } = Dimensions.get('window')
 
 export default function VideoPlayer() {
   const videoRef = useRef(null)
+  const audioRef = useRef(null)
   const route = useRoute()
   const navigation = useNavigation()
   const { markVideoWatched } = useAppFlow()
   const isReturnToVillage = route.params?.mode === 'returnToVillage'
+  const musicEnabled = route.params?.musicEnabled ?? true
+  
+  console.log('VideoPlayer params:', route.params)
+  console.log('Music enabled:', musicEnabled)
   const [showStorePrompt, setShowStorePrompt] = useState(false)
   const [playingStoreVideo, setPlayingStoreVideo] = useState(false)
   const [showGabalonModal, setShowGabalonModal] = useState(false)
@@ -22,11 +27,65 @@ export default function VideoPlayer() {
   const [showGabalonReward, setShowGabalonReward] = useState(false)
 
   useEffect(() => {
-    // 自动播放视频
-    if (videoRef.current) {
-      videoRef.current.playAsync()
+    const initializeAudioVideo = async () => {
+      try {
+        // 设置音频模式 - 使用简化配置
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          allowsRecordingIOS: false,
+          staysActiveInBackground: false,
+        })
+
+        console.log('Audio mode set, musicEnabled:', musicEnabled)
+
+        // 如果启用音乐，加载并播放背景音乐
+        if (musicEnabled) {
+          console.log('Loading background music...')
+          try {
+            // 先尝试加载音频文件
+            const musicAsset = require('../../../assets/music/Mixdown.mp3')
+            console.log('Music asset loaded:', musicAsset)
+            
+            const { sound } = await Audio.Sound.createAsync(
+              musicAsset,
+              { 
+                isLooping: true, 
+                volume: 0.8,
+                shouldPlay: true 
+              }
+            )
+            audioRef.current = sound
+            
+            // 获取音频状态
+            const status = await sound.getStatusAsync()
+            console.log('Audio status:', status)
+            console.log('Background music loaded and playing')
+          } catch (audioError) {
+            console.log('Error loading audio:', audioError)
+            console.log('Audio error details:', JSON.stringify(audioError, null, 2))
+          }
+        } else {
+          console.log('Music disabled by user')
+        }
+
+        // 自动播放视频
+        if (videoRef.current) {
+          await videoRef.current.playAsync()
+        }
+      } catch (error) {
+        console.log('Error in initializeAudioVideo:', error)
+      }
     }
-  }, [])
+
+    initializeAudioVideo()
+
+    // 清理函数
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.unloadAsync().catch(console.log)
+      }
+    }
+  }, [musicEnabled])
 
   useEffect(() => {
     // 当需要播放嘎巴龙视频时
@@ -36,7 +95,18 @@ export default function VideoPlayer() {
     }
   }, [showGabalonModal])
 
-  const handleVideoEnd = () => {
+  const handleVideoEnd = async () => {
+    // 停止背景音乐
+    if (audioRef.current) {
+      try {
+        await audioRef.current.stopAsync()
+        await audioRef.current.unloadAsync()
+        audioRef.current = null
+      } catch (error) {
+        console.log('Error stopping audio:', error)
+      }
+    }
+
     if (isReturnToVillage) {
       // 回到垃圾村模式：视频结束后直接回到主页
       console.log('Village video finished, returning to home')
@@ -65,13 +135,35 @@ export default function VideoPlayer() {
     setShowGabalonReward(true)
   }
 
-  const handleGabalonRewardConfirm = () => {
+  const handleGabalonRewardConfirm = async () => {
+    // 停止背景音乐
+    if (audioRef.current) {
+      try {
+        await audioRef.current.stopAsync()
+        await audioRef.current.unloadAsync()
+        audioRef.current = null
+      } catch (error) {
+        console.log('Error stopping audio:', error)
+      }
+    }
+
     setShowGabalonReward(false)
     console.log('First character obtained, marking video as watched')
     markVideoWatched()
   }
 
-  const handleSkipStore = () => {
+  const handleSkipStore = async () => {
+    // 停止背景音乐
+    if (audioRef.current) {
+      try {
+        await audioRef.current.stopAsync()
+        await audioRef.current.unloadAsync()
+        audioRef.current = null
+      } catch (error) {
+        console.log('Error stopping audio:', error)
+      }
+    }
+
     setShowStorePrompt(false)
     console.log('User skipped store, marking video as watched')
     markVideoWatched()

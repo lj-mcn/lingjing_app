@@ -5,24 +5,28 @@ const AppFlowContext = createContext()
 export const AppFlowProvider = ({ children }) => {
   const [videoWatched, setVideoWatched] = useState(false)
   const [musicSettingsCompleted, setMusicSettingsCompleted] = useState(false)
+  const [musicEnabled, setMusicEnabled] = useState(true)
 
   const resetAppFlow = () => {
     setVideoWatched(false)
     setMusicSettingsCompleted(false)
+    setMusicEnabled(true)
   }
 
   const markVideoWatched = () => {
     setVideoWatched(true)
   }
 
-  const markMusicSettingsCompleted = () => {
+  const markMusicSettingsCompleted = (enableMusic = true) => {
     setMusicSettingsCompleted(true)
+    setMusicEnabled(enableMusic)
   }
 
   return (
     <AppFlowContext.Provider value={{
       videoWatched,
       musicSettingsCompleted,
+      musicEnabled,
       resetAppFlow,
       markVideoWatched,
       markMusicSettingsCompleted,

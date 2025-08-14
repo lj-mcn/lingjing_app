@@ -3,21 +3,22 @@ import {
   View, StyleSheet, Dimensions, TouchableOpacity, ImageBackground, Image,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import { useAppFlow } from '../../context/AppFlowContext'
+import { useRoute } from '@react-navigation/native'
 
 const { width, height } = Dimensions.get('window')
 
 export default function MusicSettings() {
-  const { markMusicSettingsCompleted } = useAppFlow()
+  const route = useRoute()
+  const { onMusicChoice } = route.params || {}
 
   const handleMuteChoice = () => {
     console.log('User chose to mute')
-    markMusicSettingsCompleted()
+    onMusicChoice && onMusicChoice(false)
   }
 
   const handleOkChoice = () => {
     console.log('User chose OK for music')
-    markMusicSettingsCompleted()
+    onMusicChoice && onMusicChoice(true)
   }
 
 
