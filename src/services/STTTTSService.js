@@ -2,10 +2,11 @@ import axios from 'axios'
 import { Platform } from 'react-native'
 import { Audio } from 'expo-av'
 import * as Speech from 'expo-speech'
-// 尝试导入expo-speech-recognition，如果不可用则降级
-let SpeechRecognition = null
+// 导入expo-speech-recognition新版本API
+let ExpoSpeechRecognitionModule = null
 try {
-  SpeechRecognition = require('expo-speech-recognition')
+  const speechRecognitionModule = require('expo-speech-recognition')
+  ExpoSpeechRecognitionModule = speechRecognitionModule.ExpoSpeechRecognitionModule
 } catch (error) {
   console.log('expo-speech-recognition not available, will use alternative STT')
 }
@@ -45,7 +46,7 @@ class STTTTSService {
     // 服务可用性状态
     this.serviceAvailability = {
       expo: true, // Expo支持TTS，STT需要检测
-      expoSTT: !!SpeechRecognition, // Expo STT可用性
+      expoSTT: !!ExpoSpeechRecognitionModule, // Expo STT可用性
       web: Platform.OS === 'web',
       openai: false,
       azure: false,
@@ -375,13 +376,13 @@ class STTTTSService {
         continuous: false,
       }
 
-      const result = await SpeechRecognition.requestPermissionsAsync()
-      if (result.status !== 'granted') {
+      const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync()
+      if (!result.granted) {
         throw new Error('语音识别权限被拒绝')
       }
 
       // 开始识别
-      const recognition = await SpeechRecognition.startAsync(options)
+      const recognition = await ExpoSpeechRecognitionModule.start(options)
 
       if (recognition.results && recognition.results.length > 0) {
         const { transcript } = recognition.results[0]
@@ -1002,8 +1003,8 @@ class STTTTSService {
 
     // 检测Expo Speech Recognition (STT)
     try {
-      if (SpeechRecognition) {
-        const isAvailable = await SpeechRecognition.isAvailableAsync()
+      if (ExpoSpeechRecognitionModule) {
+        const isAvailable = await ExpoSpeechRecognitionModule.isAvailableAsync()
         this.serviceAvailability.expoSTT = isAvailable
         console.log(`📱 Expo Speech STT: ${isAvailable ? '可用' : '不可用'}`)
       } else {

@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useContext } from 'react'
-import { Text, View, ScrollView, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native'
+import {
+  Text, View, ScrollView, StyleSheet, TouchableOpacity, Alert, Image,
+} from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
-import ConfigTester from '../../components/ConfigTester'
+// import ConfigTester from '../../components/ConfigTester'
 import digitalHumanService from '../../services/DigitalHumanService'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
@@ -17,12 +19,12 @@ export default function Voice() {
   const colorScheme = {
     text: isDark ? colors.white : colors.primaryText,
     background: isDark ? colors.black : colors.white,
-    cardBackground: isDark ? '#333' : '#f8f9fa'
+    cardBackground: isDark ? '#333' : '#f8f9fa',
   }
 
   const [messages, setMessages] = useState([])
-  const [isListening, setIsListening] = useState(false)
-  const [showConfigTester, setShowConfigTester] = useState(false)
+  // 移除isListening状态，因为不再需要独立的语音按钮
+  // const [showConfigTester, setShowConfigTester] = useState(false)
   const [chatStarted, setChatStarted] = useState(false)
 
   useEffect(() => {
@@ -30,29 +32,32 @@ export default function Voice() {
   }, [])
 
   const handleMessage = (message) => {
-    setMessages(prev => [...prev, message])
+    setMessages((prev) => [...prev, message])
   }
 
-  const startChat = () => {
-    setChatStarted(true)
-  }
-
-  const startVoiceRecording = async () => {
-    setIsListening(true)
-    const result = await digitalHumanService.startVoiceRecording()
-    if (!result.success) {
-      Alert.alert('错误', '无法启动语音录制: ' + result.error)
-      setIsListening(false)
+  const toggleChat = async () => {
+    if (!chatStarted) {
+      // 开始对话
+      setChatStarted(true)
+      const result = await digitalHumanService.startVoiceConversation()
+      if (result.success) {
+        console.log(`✅ 语音对话已开始: ${result.message}`)
+      } else {
+        console.error('❌ 语音对话启动失败:', result.error)
+        Alert.alert('错误', `无法启动语音对话: ${result.error}`)
+        setChatStarted(false)
+      }
+    } else {
+      // 结束对话
+      const result = await digitalHumanService.stopVoiceConversation()
+      if (result) {
+        console.log('✅ 语音对话已结束')
+      }
+      setChatStarted(false)
     }
   }
 
-  const stopVoiceRecording = async () => {
-    setIsListening(false)
-    const result = await digitalHumanService.stopVoiceRecording()
-    if (!result.success) {
-      Alert.alert('错误', '语音处理失败: ' + result.error)
-    }
-  }
+  // 移除语音录制相关函数，现在由DigitalAvatar内部处理
 
   return (
     <ScreenTemplate>
@@ -70,91 +75,80 @@ export default function Voice() {
         {/* 数字人区域 */}
         <View style={styles.avatarContainer}>
           <View style={[styles.backgroundDecoration, {
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'
-          }]} />
-          
-          <DigitalAvatar 
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+          }]}
+          />
+
+          <DigitalAvatar
             style={styles.avatar}
             videoStyle={styles.avatarVideo}
             onMessage={handleMessage}
-            enableInteraction={chatStarted}
+            enableInteraction={false}
           />
-          
+
           <Text style={[styles.avatarStatus, { color: colorScheme.text }]}>
-            {!chatStarted ? '😊 点击纸团开始对话' : 
-             isListening ? '🎧 正在聆听...' : '💤 等待语音输入'}
+            {!chatStarted ? '😊 点击纸团开始对话' : '🗣️ 对话模式已开启'}
           </Text>
         </View>
 
-        {!chatStarted ? (
-          /* 纸团按钮 - 开始聊天 */
-          <View style={styles.paperBallContainer}>
-            <TouchableOpacity
-              style={styles.paperBallButton}
-              onPress={startChat}
-              activeOpacity={0.8}
-            >
-              <Image
-                source={require('../../../assets/images/纸团.png')}
-                style={styles.paperBallImage}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-            <Text style={[styles.paperBallText, { color: colorScheme.text }]}>
-              点击纸团开始语音对话 ✨
-            </Text>
-          </View>
-        ) : (
-          <>
-            {/* 语音控制按钮 */}
-            <View style={styles.controlContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.voiceButton,
-                  isListening ? styles.voiceButtonActive : styles.voiceButtonInactive
-                ]}
-                onPress={isListening ? stopVoiceRecording : startVoiceRecording}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.voiceButtonIcon}>
-                  {isListening ? '⏹️' : '🎤'}
-                </Text>
-                <Text style={styles.voiceButtonText}>
-                  {isListening ? '停止录音' : '开始语音'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+        {/* 纸团按钮 - 开始/关闭对话切换 */}
+        <View style={styles.paperBallContainer}>
+          <TouchableOpacity
+            style={[
+              styles.paperBallButton,
+              chatStarted && styles.paperBallButtonActive,
+            ]}
+            onPress={toggleChat}
+            activeOpacity={0.8}
+          >
+            <Image
+              source={require('../../../assets/images/纸团.png')}
+              style={[
+                styles.paperBallImage,
+                chatStarted && styles.paperBallImageActive,
+              ]}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+          <Text style={[styles.paperBallText, { color: colorScheme.text }]}>
+            {!chatStarted ? '点击纸团开始语音对话 ✨' : '点击纸团关闭对话 ❌'}
+          </Text>
+        </View>
 
-            {/* 对话历史 */}
-            <View style={[styles.chatContainer, { backgroundColor: colorScheme.cardBackground }]}>
-              <Text style={[styles.chatTitle, { color: colorScheme.text }]}>对话记录</Text>
-              <ScrollView style={styles.messagesContainer}>
-                {messages.length === 0 ? (
-                  <Text style={[styles.emptyText, { color: colorScheme.text }]}>
-                    按下语音按钮开始对话吧！🗣️
-                  </Text>
-                ) : (
-                  messages.map((msg, index) => (
-                    <View key={index} style={[
+        {/* 对话历史 - 只在开启对话时显示 */}
+        {chatStarted && (
+          <View style={[styles.chatContainer, { backgroundColor: colorScheme.cardBackground }]}>
+            <Text style={[styles.chatTitle, { color: colorScheme.text }]}>对话记录</Text>
+            <ScrollView style={styles.messagesContainer}>
+              {messages.length === 0 ? (
+                <Text style={[styles.emptyText, { color: colorScheme.text }]}>
+                  开始与嘎巴龙对话吧！🗣️
+                </Text>
+              ) : (
+                messages.map((msg, index) => (
+                  <View
+                    key={index}
+                    style={[
                       styles.messageItem,
-                      msg.role === 'user' ? styles.userMessage : styles.assistantMessage
-                    ]}>
-                      <Text style={[
-                        styles.messageText,
-                        { color: msg.role === 'user' ? colors.white : colorScheme.text }
-                      ]}>
-                        {msg.role === 'user' ? '👤 我：' : '🐉 嘎巴龙：'}{msg.message}
-                      </Text>
-                    </View>
-                  ))
-                )}
-              </ScrollView>
-            </View>
-          </>
+                      msg.role === 'user' ? styles.userMessage : styles.assistantMessage,
+                    ]}
+                  >
+                    <Text style={[
+                      styles.messageText,
+                      { color: msg.role === 'user' ? colors.white : colorScheme.text },
+                    ]}
+                    >
+                      {msg.role === 'user' ? '👤 我：' : '🐉 嘎巴龙：'}{msg.message}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
         )}
 
         {/* 测试按钮 */}
-        <TouchableOpacity 
+        {/* <TouchableOpacity
           style={styles.testButton}
           onPress={() => setShowConfigTester(true)}
         >
@@ -162,9 +156,9 @@ export default function Voice() {
         </TouchableOpacity>
 
         {/* 配置测试器 */}
-        {showConfigTester && (
+        {/* {showConfigTester && (
           <ConfigTester onClose={() => setShowConfigTester(false)} />
-        )}
+        )} */}
       </ScrollView>
     </ScreenTemplate>
   )
@@ -225,40 +219,6 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     zIndex: -1,
     opacity: 0.3,
-  },
-  controlContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  voiceButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-  },
-  voiceButtonActive: {
-    backgroundColor: '#ff4757',
-  },
-  voiceButtonInactive: {
-    backgroundColor: colors.tertiary,
-  },
-  voiceButtonIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  voiceButtonText: {
-    color: colors.white,
-    fontSize: fontSize.small,
-    fontWeight: 'bold',
   },
   chatContainer: {
     borderRadius: 15,
@@ -337,9 +297,18 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 12,
   },
+  paperBallButtonActive: {
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    borderWidth: 2,
+    borderColor: 'rgba(76, 175, 80, 0.5)',
+  },
   paperBallImage: {
     width: 100,
     height: 100,
+  },
+  paperBallImageActive: {
+    opacity: 0.8,
+    transform: [{ scale: 0.95 }],
   },
   paperBallText: {
     fontSize: fontSize.large,

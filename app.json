@@ -47,8 +47,14 @@
     "description": "",
     "plugins": [
       "expo-font",
-      "expo-asset"
-    ]
+      "expo-asset",
+      "expo-speech-recognition"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4798bd39-784d-4fd9-aa1b-b70268536555"
+      }
+    }
     
   }
 }

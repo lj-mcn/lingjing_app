@@ -5398,6 +5398,11 @@ expo-asset@~11.1.7:
     "@expo/image-utils" "^0.7.6"
     expo-constants "~17.1.7"
 
+expo-audio@^0.4.8:
+  version "0.4.8"
+  resolved "https://registry.npmjs.org/expo-audio/-/expo-audio-0.4.8.tgz"
+  integrity sha512-tiR4pMNlIBj/r8el8B71EYd61+1mK8sn3ssgMfbhzwKB177b5kgqOoDwjPfBcOFdbF852IGx0Akd1mduXDc6VQ==
+
 expo-av@~15.1.7:
   version "15.1.7"
   resolved "https://registry.npmjs.org/expo-av/-/expo-av-15.1.7.tgz"
@@ -5519,6 +5524,16 @@ expo-pwa@0.0.127:
     chalk "^4.0.0"
     commander "2.20.0"
     update-check "1.5.3"
+
+expo-speech-recognition@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.npmjs.org/expo-speech-recognition/-/expo-speech-recognition-2.1.1.tgz"
+  integrity sha512-TISNa9UIi01TlZfxyXU6jLC4f18yyXJgIMRM30PqSETbbQI8BafgkCIRBnZVvGR3wbyeNvG9zHc76du/vuiPLQ==
+
+expo-speech@^13.1.7:
+  version "13.1.7"
+  resolved "https://registry.npmjs.org/expo-speech/-/expo-speech-13.1.7.tgz"
+  integrity sha512-RMMgK6IIPQD9uLhmY2Q9v+2j3wmTGqB/qZ7sdy5//5TLCzFwAq1vlpy5A2psVsctoWVxUO4EmlaNai0ahQmKRg==
 
 expo-status-bar@~2.2.3:
   version "2.2.3"
@@ -5992,6 +6007,11 @@ fs.realpath@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/fs.realpath/-/fs.realpath-1.0.0.tgz"
   integrity sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==
+
+fsevents@^2.3.2, fsevents@~2.3.2:
+  version "2.3.3"
+  resolved "https://registry.npmjs.org/fsevents/-/fsevents-2.3.3.tgz"
+  integrity sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==
 
 function-bind@^1.1.2:
   version "1.1.2"
@@ -7511,10 +7531,10 @@ lighthouse-logger@^1.0.0:
     debug "^2.6.9"
     marky "^1.2.2"
 
-lightningcss-win32-x64-msvc@1.27.0:
+lightningcss-darwin-arm64@1.27.0:
   version "1.27.0"
-  resolved "https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.27.0.tgz"
-  integrity sha512-/OJLj94Zm/waZShL8nB5jsNj3CfNATLCTyFxZyouilfTmSoLDX7VlVAmhPHoZWVFp4vdmoiEbPEYC8HID3m6yw==
+  resolved "https://registry.npmjs.org/lightningcss-darwin-arm64/-/lightningcss-darwin-arm64-1.27.0.tgz"
+  integrity sha512-Gl/lqIXY+d+ySmMbgDf0pgaWSqrWYxVHoc88q+Vhf2YNzZ8DwoRzGt5NZDVqqIW5ScpSnmmjcgXP87Dn2ylSSQ==
 
 lightningcss@~1.27.0:
   version "1.27.0"

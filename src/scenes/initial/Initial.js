@@ -25,15 +25,29 @@ export default function Initial() {
 
   useEffect(() => {
     onAuthStateChanged(auth, (user) => {
+      console.log('Auth state changed:', user ? 'User logged in' : 'User logged out')
       if (user) {
+        console.log('User UID:', user.uid)
         const usersRef = doc(firestore, 'users', user.uid)
         onSnapshot(usersRef, (querySnapshot) => {
-          const userData = querySnapshot.data()
-          setUserData(userData)
-          setLoggedIn(true)
+          if (querySnapshot.exists()) {
+            const userData = querySnapshot.data()
+            console.log('User data loaded:', userData)
+            setUserData(userData)
+            setLoggedIn(true)
+            setChecked(true)
+          } else {
+            console.error('User document does not exist in Firestore')
+            setLoggedIn(false)
+            setChecked(true)
+          }
+        }, (error) => {
+          console.error('Error listening to user document:', error)
+          setLoggedIn(false)
           setChecked(true)
         })
       } else {
+        console.log('No user authenticated')
         setLoggedIn(false)
         setChecked(true)
       }

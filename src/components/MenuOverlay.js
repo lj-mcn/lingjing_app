@@ -1,15 +1,19 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions } from 'react-native'
+import {
+  View, Text, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions,
+} from 'react-native'
 import { colors, fontSize } from '../theme'
 
 const { width, height } = Dimensions.get('window')
 
-const MenuOverlay = ({ visible, onClose, isDark, onBackToVillage }) => {
+const MenuOverlay = ({
+  visible, onClose, isDark, onBackToVillage,
+}) => {
   const colorScheme = {
     text: isDark ? colors.white : colors.primaryText,
     background: isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)',
     menuBackground: isDark ? '#2a2a2a' : colors.white,
-    buttonBackground: isDark ? '#444' : '#f8f9fa'
+    buttonBackground: isDark ? '#444' : '#f8f9fa',
   }
 
   const menuItems = [
@@ -19,7 +23,7 @@ const MenuOverlay = ({ visible, onClose, isDark, onBackToVillage }) => {
     { id: 4, title: '👗 打扮一下', action: 'dressUp' },
     { id: 5, title: '👨‍👩‍👧‍👦 村民家族', action: 'villagerFamily' },
     { id: 6, title: '🐔 养鸡场的终极对决', action: 'chickenBattle' },
-    { id: 7, title: '⚙️ 我的设置', action: 'settings' }
+    { id: 7, title: '⚙️ 我的设置', action: 'settings' },
   ]
 
   const handleMenuItemPress = (action) => {
@@ -59,11 +63,11 @@ const MenuOverlay = ({ visible, onClose, isDark, onBackToVillage }) => {
   return (
     <Modal
       visible={visible}
-      transparent={true}
+      transparent
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.overlay, { backgroundColor: colorScheme.background }]}
         activeOpacity={1}
         onPress={onClose}
@@ -73,14 +77,14 @@ const MenuOverlay = ({ visible, onClose, isDark, onBackToVillage }) => {
             <Text style={[styles.menuTitle, { color: colorScheme.text }]}>
               🎮 游戏菜单
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.closeButton}
               onPress={onClose}
             >
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.menuContent}>
             {menuItems.map((item, index) => (
               <TouchableOpacity
@@ -88,7 +92,7 @@ const MenuOverlay = ({ visible, onClose, isDark, onBackToVillage }) => {
                 style={[
                   styles.menuItem,
                   { backgroundColor: colorScheme.buttonBackground },
-                  index === menuItems.length - 1 && styles.lastMenuItem
+                  index === menuItems.length - 1 && styles.lastMenuItem,
                 ]}
                 onPress={() => handleMenuItemPress(item.action)}
                 activeOpacity={0.7}
@@ -100,7 +104,7 @@ const MenuOverlay = ({ visible, onClose, isDark, onBackToVillage }) => {
               </TouchableOpacity>
             ))}
           </View>
-          
+
           <View style={styles.menuFooter}>
             <Text style={[styles.footerText, { color: colorScheme.text }]}>
               嘎巴龙的奇幻世界 ✨

@@ -199,9 +199,9 @@ export default function Home() {
           </View>
         </GestureDetector>
       </GestureHandlerRootView>
-      
+
       {/* 菜单覆盖层 */}
-      <MenuOverlay 
+      <MenuOverlay
         visible={showMenu}
         onClose={() => setShowMenu(false)}
         isDark={isDark}

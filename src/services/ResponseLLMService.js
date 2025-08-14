@@ -1,5 +1,6 @@
 import webSocketService from './WebSocketService'
 import llmConfig from '../config/llmConfig'
+import chatMemoryService from './ChatMemoryService'
 
 class ResponseLLMService {
   constructor() {
@@ -132,20 +133,26 @@ class ResponseLLMService {
         reject,
         timeoutId,
         timestamp: Date.now(),
+        userInput, // 存储原始用户输入，用于更新记忆
       })
+
+      // 获取记忆中的对话上下文
+      const memoryContext = chatMemoryService.getContext()
+
+      // 构建包含历史记忆的提示词
+      let fullPrompt = userInput
+      if (memoryContext) {
+        fullPrompt = `${memoryContext}\nUser: ${userInput}`
+      }
 
       const requestData = {
         type: 'llm_request',
         requestId,
         data: {
-          prompt: userInput,
+          prompt: fullPrompt,
           conversation_history: conversationHistory,
           max_tokens: this.modelConfig.max_tokens,
-<<<<<<< HEAD
-          system_prompt: llmConfig.gabalong.systemPrompt,
-=======
           system_prompt: llmConfig.gabalong.system_prompt,
->>>>>>> 20154c2bca66d554a948f7d8a44c83dcb96deaf8
         },
         timestamp: Date.now(),
       }
@@ -167,6 +174,13 @@ class ResponseLLMService {
         this.pendingRequests.delete(data.requestId)
 
         if (data.success) {
+          // 存储用户输入和助手回复到记忆中
+          if (request.userInput && data.message) {
+            chatMemoryService.addToHistory(request.userInput, data.message)
+            // 自动管理历史记录长度
+            chatMemoryService.autoManageHistory()
+          }
+
           request.resolve({
             success: true,
             message: data.message,
@@ -306,6 +320,71 @@ class ResponseLLMService {
       console.error('Server health check failed:', error)
       return false
     }
+  }
+
+  // 记忆管理相关方法
+
+  /**
+   * 获取当前对话记忆上下文
+   * @returns {string} 对话上下文
+   */
+  getMemoryContext() {
+    return chatMemoryService.getContext()
+  }
+
+  /**
+   * 获取格式化的对话历史
+   * @returns {Array} 格式化的对话数组
+   */
+  getConversationHistory() {
+    return chatMemoryService.getFormattedHistory()
+  }
+
+  /**
+   * 清空对话记忆
+   */
+  clearMemory() {
+    chatMemoryService.clearHistory()
+    console.log('对话记忆已清空')
+  }
+
+  /**
+   * 获取记忆统计信息
+   * @returns {Object} 记忆统计信息
+   */
+  getMemoryStats() {
+    return {
+      historyLength: chatMemoryService.getHistoryLength(),
+      turnCount: chatMemoryService.getTurnCount(),
+      hasHistory: chatMemoryService.hasHistory(),
+      maxLength: chatMemoryService.getMaxLength(),
+    }
+  }
+
+  /**
+   * 设置记忆最大长度
+   * @param {number} maxLength - 最大长度
+   */
+  setMemoryMaxLength(maxLength) {
+    chatMemoryService.setMaxLength(maxLength)
+    console.log(`记忆最大长度已设置为: ${maxLength}`)
+  }
+
+  /**
+   * 导出记忆数据（用于持久化存储）
+   * @returns {Object} 记忆数据
+   */
+  exportMemory() {
+    return chatMemoryService.export()
+  }
+
+  /**
+   * 导入记忆数据（从持久化存储恢复）
+   * @param {Object} memoryData - 记忆数据
+   */
+  importMemory(memoryData) {
+    chatMemoryService.import(memoryData)
+    console.log('记忆数据已导入')
   }
 
   cleanup() {

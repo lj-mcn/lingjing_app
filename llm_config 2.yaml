@@ -19,7 +19,7 @@ servers:
   enabled: true
   name: 主服务器
   priority: 1
-  url: ws://10.91.225.137:8000
+  url: ws://192.168.43.119:8000
 - description: 第一个备用服务器
   enabled: true
   name: 备用服务器1

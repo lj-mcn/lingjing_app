@@ -25,8 +25,16 @@ Notifications.setNotificationHandler({
 
 export default function RootStack() {
   const { userData } = useContext(UserDataContext)
-  const { videoWatched, musicSettingsCompleted, markVideoWatched, markMusicSettingsCompleted } = useAppFlow()
+  const {
+    videoWatched, musicSettingsCompleted, markVideoWatched, markMusicSettingsCompleted,
+  } = useAppFlow()
   const isIos = Platform.OS === 'ios'
+
+  const handleMusicChoice = (choice) => {
+    console.log('Music choice:', choice)
+    // 用户选择后进入视频播放阶段
+    markMusicSettingsCompleted()
+  }
 
   useEffect(() => {
     (async () => {
@@ -59,12 +67,6 @@ export default function RootStack() {
     })
     return () => subscription.remove()
   }, [])
-
-  const handleMusicChoice = (choice) => {
-    console.log('Music choice:', choice)
-    // 用户选择后进入视频播放阶段
-    markMusicSettingsCompleted()
-  }
 
   return (
     <Stack.Navigator

@@ -1,11 +1,16 @@
-import React, { useEffect, useState, useContext, useRef } from 'react'
-import { Text, View, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native'
+import React, {
+  useEffect, useState, useContext, useRef,
+} from 'react'
+import {
+  Text, View, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image,
+} from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
 import Button from '../../components/Button'
-import ConfigTester from '../../components/ConfigTester'
+// import ConfigTester from '../../components/ConfigTester'
 import digitalHumanService from '../../services/DigitalHumanService'
+import responseLLMService from '../../services/ResponseLLMService'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
 import { UserDataContext } from '../../context/UserDataContext'
@@ -20,14 +25,15 @@ export default function TextChat() {
     text: isDark ? colors.white : colors.primaryText,
     background: isDark ? colors.black : colors.white,
     inputBackground: isDark ? '#333' : '#f5f5f5',
-    cardBackground: isDark ? '#2a2a2a' : '#ffffff'
+    cardBackground: isDark ? '#2a2a2a' : '#ffffff',
   }
 
   const [messages, setMessages] = useState([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [showConfigTester, setShowConfigTester] = useState(false)
+  // const [showConfigTester, setShowConfigTester] = useState(false)
   const [chatStarted, setChatStarted] = useState(false)
+  const [memoryStats, setMemoryStats] = useState({ turnCount: 0, hasHistory: false })
 
   useEffect(() => {
     console.log('Text screen - 嘎巴龙文字交互')
@@ -40,41 +46,54 @@ export default function TextChat() {
     }
   }, [messages])
 
+  // 更新记忆状态
+  useEffect(() => {
+    const updateMemoryStats = () => {
+      const stats = responseLLMService.getMemoryStats()
+      setMemoryStats(stats)
+    }
+
+    updateMemoryStats()
+    // 每次消息变化时更新记忆状态
+    const interval = setInterval(updateMemoryStats, 1000)
+    return () => clearInterval(interval)
+  }, [messages])
+
   const startChat = () => {
     setChatStarted(true)
   }
 
   const handleMessage = (message) => {
-    setMessages(prev => [...prev, message])
+    setMessages((prev) => [...prev, message])
   }
 
   const handleSendText = async () => {
     if (inputText.trim().length === 0) return
-    
+
     const userMessage = inputText.trim()
     setInputText('')
     setIsTyping(true)
-    
+
     // 添加用户消息到对话历史
     const newUserMessage = {
       role: 'user',
       message: userMessage,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString(),
     }
-    setMessages(prev => [...prev, newUserMessage])
-    
+    setMessages((prev) => [...prev, newUserMessage])
+
     try {
       // 发送文本消息给数字人
       const result = await digitalHumanService.sendTextMessage(userMessage)
       if (!result.success) {
-        Alert.alert('错误', '发送消息失败: ' + result.error)
+        Alert.alert('错误', `发送消息失败: ${result.error}`)
         // 添加错误消息
         const errorMessage = {
           role: 'assistant',
           message: '抱歉，我现在无法回复您的消息，请稍后再试。',
-          timestamp: new Date().toLocaleTimeString()
+          timestamp: new Date().toLocaleTimeString(),
         }
-        setMessages(prev => [...prev, errorMessage])
+        setMessages((prev) => [...prev, errorMessage])
       }
     } catch (error) {
       console.error('发送消息错误:', error)
@@ -87,21 +106,25 @@ export default function TextChat() {
   const clearMessages = () => {
     Alert.alert(
       '清空对话',
-      '确定要清空所有对话记录吗？',
+      '确定要清空所有对话记录和记忆吗？这将删除所有聊天历史。',
       [
         { text: '取消', style: 'cancel' },
-        { 
-          text: '确定', 
-          onPress: () => setMessages([]),
-          style: 'destructive'
-        }
-      ]
+        {
+          text: '确定',
+          onPress: () => {
+            setMessages([])
+            // 清空对话记忆
+            responseLLMService.clearMemory()
+          },
+          style: 'destructive',
+        },
+      ],
     )
   }
 
   return (
     <ScreenTemplate>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
@@ -118,15 +141,15 @@ export default function TextChat() {
 
           {/* 数字人区域 */}
           <View style={styles.avatarContainer}>
-            <DigitalAvatar 
+            <DigitalAvatar
               style={styles.avatar}
               videoStyle={styles.avatarVideo}
               onMessage={handleMessage}
               enableInteraction={chatStarted}
             />
             <Text style={[styles.avatarStatus, { color: colorScheme.text }]}>
-              {!chatStarted ? '😊 点击纸团开始对话' :
-               isTyping ? '💭 正在思考...' : '😊 准备聊天'}
+              {!chatStarted ? '😊 点击纸团开始对话'
+                : isTyping ? '💭 正在思考...' : '😊 准备聊天'}
             </Text>
           </View>
 
@@ -153,15 +176,22 @@ export default function TextChat() {
               {/* 对话区域 */}
               <View style={[styles.chatContainer, { backgroundColor: colorScheme.cardBackground }]}>
                 <View style={styles.chatHeader}>
-                  <Text style={[styles.chatTitle, { color: colorScheme.text }]}>对话记录</Text>
+                  <View style={styles.chatHeaderLeft}>
+                    <Text style={[styles.chatTitle, { color: colorScheme.text }]}>对话记录</Text>
+                    {memoryStats.hasHistory && (
+                      <Text style={[styles.memoryStatus, { color: isDark ? '#999' : '#666' }]}>
+                        🧠 记忆: {memoryStats.turnCount}轮
+                      </Text>
+                    )}
+                  </View>
                   {messages.length > 0 && (
                     <TouchableOpacity onPress={clearMessages}>
                       <Text style={styles.clearButton}>🗑️ 清空</Text>
                     </TouchableOpacity>
                   )}
                 </View>
-                
-                <ScrollView 
+
+                <ScrollView
                   ref={scrollViewRef}
                   style={styles.messagesContainer}
                   showsVerticalScrollIndicator={false}
@@ -172,21 +202,26 @@ export default function TextChat() {
                     </Text>
                   ) : (
                     messages.map((msg, index) => (
-                      <View key={index} style={[
-                        styles.messageItem,
-                        msg.role === 'user' ? styles.userMessage : styles.assistantMessage
-                      ]}>
+                      <View
+                        key={index}
+                        style={[
+                          styles.messageItem,
+                          msg.role === 'user' ? styles.userMessage : styles.assistantMessage,
+                        ]}
+                      >
                         <Text style={[
                           styles.messageText,
-                          { color: msg.role === 'user' ? colors.white : colorScheme.text }
-                        ]}>
+                          { color: msg.role === 'user' ? colors.white : colorScheme.text },
+                        ]}
+                        >
                           {msg.role === 'user' ? '👤 我：' : '🐉 嘎巴龙：'}{msg.message}
                         </Text>
                         {msg.timestamp && (
                           <Text style={[
                             styles.messageTime,
-                            { color: msg.role === 'user' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)' }
-                          ]}>
+                            { color: msg.role === 'user' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)' },
+                          ]}
+                          >
                             {msg.timestamp}
                           </Text>
                         )}
@@ -209,13 +244,13 @@ export default function TextChat() {
                   style={[styles.textInput, {
                     backgroundColor: colorScheme.inputBackground,
                     color: colorScheme.text,
-                    borderColor: isDark ? '#555' : '#ddd'
+                    borderColor: isDark ? '#555' : '#ddd',
                   }]}
                   placeholder="输入消息..."
                   placeholderTextColor={isDark ? '#999' : '#666'}
                   value={inputText}
                   onChangeText={setInputText}
-                  multiline={true}
+                  multiline
                   maxLength={500}
                   editable={!isTyping}
                 />
@@ -231,7 +266,7 @@ export default function TextChat() {
           )}
 
           {/* 测试按钮 */}
-          <TouchableOpacity 
+          {/* <TouchableOpacity
             style={styles.testButton}
             onPress={() => setShowConfigTester(true)}
           >
@@ -239,9 +274,9 @@ export default function TextChat() {
           </TouchableOpacity>
 
           {/* 配置测试器 */}
-          {showConfigTester && (
+          {/* {showConfigTester && (
             <ConfigTester onClose={() => setShowConfigTester(false)} />
-          )}
+          )} */}
         </View>
       </KeyboardAvoidingView>
     </ScreenTemplate>
@@ -315,9 +350,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
+  chatHeaderLeft: {
+    flex: 1,
+  },
   chatTitle: {
     fontSize: fontSize.large,
     fontWeight: 'bold',
+  },
+  memoryStatus: {
+    fontSize: fontSize.xSmall,
+    marginTop: 2,
+    fontStyle: 'italic',
   },
   clearButton: {
     color: '#ff4757',

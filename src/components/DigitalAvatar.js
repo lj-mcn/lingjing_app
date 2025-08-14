@@ -1,11 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react'
 import {
-  View, StyleSheet, Dimensions, TouchableOpacity, Text,
+  View, StyleSheet, Text,
 } from 'react-native'
 import { Video } from 'expo-av'
 import digitalHumanService from '../services/DigitalHumanService'
 
-const { width, height } = Dimensions.get('window')
 
 export default function DigitalAvatar({
   style,
@@ -19,10 +18,16 @@ export default function DigitalAvatar({
   const videoRef = useRef(null)
   const [status, setStatus] = useState('idle') // idle, recording, processing, speaking
   const [isInitialized, setIsInitialized] = useState(false)
+  const [videoError, setVideoError] = useState(null)
 
   useEffect(() => {
     if (autoPlay && videoRef.current) {
-      videoRef.current.playAsync()
+      console.log('尝试播放数字人视频...')
+      videoRef.current.playAsync().then(() => {
+        console.log('✅ 数字人视频播放成功')
+      }).catch((error) => {
+        console.error('❌ 数字人视频播放失败:', error)
+      })
     }
   }, [autoPlay])
 
@@ -99,36 +104,6 @@ export default function DigitalAvatar({
     }
   }
 
-  const handleAvatarPress = async () => {
-    if (!enableInteraction || !isInitialized) {
-      console.log('数字人未就绪，无法开始对话')
-      return
-    }
-
-    if (status === 'idle') {
-      // 开始语音对话
-      console.log('🎙️ 用户点击开始语音对话')
-      const result = await digitalHumanService.startVoiceConversation()
-      if (result.success) {
-        console.log(`✅ 语音对话已开始: ${result.message}`)
-      } else {
-        console.error('❌ 语音对话启动失败:', result.error)
-      }
-    } else if (status === 'recording') {
-      // 结束录音并处理
-      console.log('🛑 用户点击停止录音')
-      const processed = await digitalHumanService.stopVoiceConversation()
-      if (processed) {
-        console.log('✅ 语音对话处理完成')
-      } else {
-        console.error('❌ 语音对话处理失败')
-      }
-    } else if (status === 'processing') {
-      console.log('⏳ 正在处理中，请稍候...')
-    } else if (status === 'speaking') {
-      console.log('🗣️ 数字人正在说话中...')
-    }
-  }
 
   const getStatusText = () => {
     if (!enableInteraction) return ''
@@ -166,13 +141,9 @@ export default function DigitalAvatar({
     }
   }
 
+
   return (
-    <TouchableOpacity
-      style={[styles.container, style]}
-      onPress={handleAvatarPress}
-      activeOpacity={enableInteraction ? 0.8 : 1}
-      disabled={!enableInteraction || !isInitialized}
-    >
+    <View style={[styles.container, style]}>
       <View style={styles.videoContainer}>
         <Video
           ref={videoRef}
@@ -182,7 +153,29 @@ export default function DigitalAvatar({
           resizeMode="cover"
           isLooping={loop}
           shouldPlay={autoPlay}
+          onLoad={(loadStatus) => {
+            console.log('数字人视频加载完成:', loadStatus)
+            setVideoError(null)
+          }}
+          onError={(error) => {
+            console.error('数字人视频加载失败:', error)
+            setVideoError(error)
+          }}
+          onPlaybackStatusUpdate={(playbackStatus) => {
+            if (playbackStatus.error) {
+              console.error('数字人视频播放错误:', playbackStatus.error)
+              setVideoError(playbackStatus.error)
+            }
+          }}
         />
+
+        {/* 视频加载失败时的后备显示 */}
+        {videoError && (
+          <View style={styles.fallbackContainer}>
+            <Text style={styles.fallbackEmoji}>🐉</Text>
+            <Text style={styles.fallbackText}>嘎巴龙</Text>
+          </View>
+        )}
 
         {/* 状态指示器 */}
         {enableInteraction && (
@@ -194,7 +187,8 @@ export default function DigitalAvatar({
       {enableInteraction && (
         <Text style={styles.statusText}>{getStatusText()}</Text>
       )}
-    </TouchableOpacity>
+
+    </View>
   )
 }
 
@@ -209,14 +203,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    backdropFilter: 'blur(10px)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    width: 200,
+    height: 300,
   },
   video: {
     width: 200,
     height: 300,
     borderRadius: 20,
-    backgroundColor: 'transparent',
+    backgroundColor: '#f0f0f0', // 添加背景色以便调试
   },
   statusIndicator: {
     position: 'absolute',
@@ -232,5 +227,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     textAlign: 'center',
+  },
+  fallbackContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+  },
+  fallbackEmoji: {
+    fontSize: 60,
+    marginBottom: 10,
+  },
+  fallbackText: {
+    fontSize: 18,
+    color: '#333',
+    fontWeight: '500',
   },
 })
