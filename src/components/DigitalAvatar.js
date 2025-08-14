@@ -15,6 +15,14 @@ export default function DigitalAvatar({
   showControls = false,
   enableInteraction = true,
   onMessage = null,
+  showAngryVideo = false,
+  onAngryVideoEnd = null,
+  showHappyVideo = false,
+  onHappyVideoEnd = null,
+  showSadVideo = false,
+  onSadVideoEnd = null,
+  showScaredVideo = false,
+  onScaredVideoEnd = null,
 }) {
   const videoRef = useRef(null)
   const [status, setStatus] = useState('idle') // idle, recording, processing, speaking
@@ -166,6 +174,25 @@ export default function DigitalAvatar({
     }
   }
 
+  const handleVideoStatusUpdate = (videoStatus) => {
+    // 当生气视频播放完成时，通知父组件
+    if (showAngryVideo && videoStatus.didJustFinish && onAngryVideoEnd) {
+      onAngryVideoEnd()
+    }
+    // 当开心视频播放完成时，通知父组件
+    if (showHappyVideo && videoStatus.didJustFinish && onHappyVideoEnd) {
+      onHappyVideoEnd()
+    }
+    // 当伤心视频播放完成时，通知父组件
+    if (showSadVideo && videoStatus.didJustFinish && onSadVideoEnd) {
+      onSadVideoEnd()
+    }
+    // 当害怕视频播放完成时，通知父组件
+    if (showScaredVideo && videoStatus.didJustFinish && onScaredVideoEnd) {
+      onScaredVideoEnd()
+    }
+  }
+
   return (
     <TouchableOpacity
       style={[styles.container, style]}
@@ -177,11 +204,22 @@ export default function DigitalAvatar({
         <Video
           ref={videoRef}
           style={[styles.video, videoStyle]}
-          source={require('../../assets/images/嘎巴龙待机.mp4')}
+          source={
+            showAngryVideo 
+              ? require('../../assets/images/嘎巴龙生气.mp4')
+              : showHappyVideo
+                ? require('../../assets/images/嘎巴龙开心.mp4')
+                : showSadVideo
+                  ? require('../../assets/images/嘎巴龙伤心.mp4')
+                  : showScaredVideo
+                    ? require('../../assets/images/嘎巴龙害怕.mp4')
+                    : require('../../assets/images/嘎巴龙待机.mp4')
+          }
           useNativeControls={showControls}
           resizeMode="cover"
-          isLooping={loop}
+          isLooping={showAngryVideo || showHappyVideo || showSadVideo || showScaredVideo ? false : loop}
           shouldPlay={autoPlay}
+          onPlaybackStatusUpdate={handleVideoStatusUpdate}
         />
 
         {/* 状态指示器 */}
