@@ -126,6 +126,39 @@ class AudioService {
     }
   }
 
+  // 强制停止录音，确保状态完全重置
+  async forceStopRecording() {
+    try {
+      console.log('🔄 强制停止录音')
+      
+      // 强制重置状态
+      this.isRecording = false
+      
+      // 如果有录音对象，尝试停止
+      if (this.recording) {
+        try {
+          await this.recording.stopAndUnloadAsync()
+        } catch (error) {
+          console.log('强制停止录音对象失败（可能已停止）:', error.message)
+        }
+        this.recording = null
+      }
+      
+      // 重置录音URI
+      this.recordingUri = null
+      
+      console.log('✅ 录音状态已强制重置')
+      return true
+    } catch (error) {
+      console.error('强制停止录音失败:', error)
+      // 即使失败也要重置状态
+      this.isRecording = false
+      this.recording = null
+      this.recordingUri = null
+      return false
+    }
+  }
+
   async getRecordingBase64() {
     try {
       if (!this.recordingUri) {

@@ -23,7 +23,8 @@ const Box = () => {
       setCurrentVideo(videos[randomIndex])
     } catch (error) {
       console.error('Error playing video:', error)
-      Alert.alert('错误', `无法播放视频: ${error.message}`)
+      console.error('无法播放视频:', error.message)
+      // Alert.alert('错误', `无法播放视频: ${error.message}`)
     }
   }
 
@@ -45,7 +46,9 @@ const Box = () => {
           onLoad={() => console.log('Video loaded')}
           onError={(error) => {
             console.error('Video error:', error)
-            Alert.alert('视频错误', '视频播放失败')
+            console.error('视频播放失败')
+            // 注释掉弹窗显示，但保留日志记录
+            // Alert.alert('视频错误', '视频播放失败')
           }}
         />
       )}

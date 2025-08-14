@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
-import { View, TouchableOpacity, Text, Animated, StyleSheet } from 'react-native'
+import {
+  View, TouchableOpacity, Text, Animated, StyleSheet,
+} from 'react-native'
 import FontIcon from 'react-native-vector-icons/FontAwesome'
 import { colors } from 'theme'
 
 const CustomTabBar = ({ state, descriptors, navigation }) => {
   const [buttonScales] = useState(
-    state.routes.map(() => new Animated.Value(1))
+    state.routes.map(() => new Animated.Value(1)),
   )
 
   const handleTabPress = (route, index, isFocused) => {
@@ -64,11 +66,11 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
         const tintColor = isFocused ? colors.lightPurple : colors.gray
 
         return (
-          <Animated.View 
+          <Animated.View
             key={route.key}
             style={[
               styles.tabItem,
-              { transform: [{ scale: buttonScales[index] }] }
+              { transform: [{ scale: buttonScales[index] }] },
             ]}
           >
             <TouchableOpacity

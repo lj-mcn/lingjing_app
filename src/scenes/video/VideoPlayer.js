@@ -17,7 +17,7 @@ export default function VideoPlayer() {
   const { markVideoWatched } = useAppFlow()
   const isReturnToVillage = route.params?.mode === 'returnToVillage'
   const musicEnabled = route.params?.musicEnabled ?? true
-  
+
   console.log('VideoPlayer params:', route.params)
   console.log('Music enabled:', musicEnabled)
   const [showStorePrompt, setShowStorePrompt] = useState(false)
@@ -45,17 +45,17 @@ export default function VideoPlayer() {
             // 先尝试加载音频文件
             const musicAsset = require('../../../assets/music/Mixdown.mp3')
             console.log('Music asset loaded:', musicAsset)
-            
+
             const { sound } = await Audio.Sound.createAsync(
               musicAsset,
-              { 
-                isLooping: true, 
+              {
+                isLooping: true,
                 volume: 0.8,
-                shouldPlay: true 
-              }
+                shouldPlay: true,
+              },
             )
             audioRef.current = sound
-            
+
             // 获取音频状态
             const status = await sound.getStatusAsync()
             console.log('Audio status:', status)

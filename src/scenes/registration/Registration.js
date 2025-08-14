@@ -38,25 +38,66 @@ export default function Registration() {
   }
 
   const onRegisterPress = async () => {
-    if (password !== confirmPassword) {
-      alert("Passwords don't match.")
+    if (!fullName.trim() || !email.trim() || !password.trim()) {
+      console.error('Registration validation failed: Missing required fields')
+      // alert('Please fill in all fields.')
       return
     }
+
+    if (password !== confirmPassword) {
+      console.error('Registration validation failed: Passwords do not match')
+      // alert("Passwords don't match.")
+      return
+    }
+
+    if (password.length < 6) {
+      console.error('Registration validation failed: Password too short')
+      // alert('Password should be at least 6 characters long.')
+      return
+    }
+
     try {
       setSpinner(true)
+      console.log('Creating user account for:', email)
       const response = await createUserWithEmailAndPassword(auth, email, password)
       const { uid } = response.user
+
       const data = {
         id: uid,
         email,
         fullName,
         avatar: defaultAvatar,
       }
+
+      console.log('Saving user data to Firestore:', data)
       const usersRef = doc(firestore, 'users', uid)
       await setDoc(usersRef, data)
-    } catch (e) {
+      console.log('User registration successful')
       setSpinner(false)
-      alert(e)
+    } catch (error) {
+      console.error('Registration error:', error.code, error.message)
+      setSpinner(false)
+
+      let errorMessage = 'Registration failed. Please try again.'
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'This email address is already in use.'
+          break
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address format.'
+          break
+        case 'auth/weak-password':
+          errorMessage = 'Password is too weak. Please use a stronger password.'
+          break
+        case 'auth/network-request-failed':
+          errorMessage = 'Network error. Please check your connection.'
+          break
+        default:
+          errorMessage = error.message
+      }
+
+      console.error('Registration error message:', errorMessage)
+      // alert(errorMessage)
     }
   }
 

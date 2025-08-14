@@ -103,15 +103,15 @@ export default function Profile() {
         <Button
           label="Edit"
           color="#FFB366"
-          style3D={true}
-          compact={true}
+          style3D
+          compact
           onPress={goDetail}
         />
         <Button
           label="Open Modal"
           color="#FF8C42"
-          style3D={true}
-          compact={true}
+          style3D
+          compact
           onPress={() => {
             navigation.navigate('ModalStacks', {
               screen: 'Post',
@@ -125,8 +125,8 @@ export default function Profile() {
         <Button
           label="Delete account"
           color="#E65100"
-          style3D={true}
-          compact={true}
+          style3D
+          compact
           onPress={showDialog}
         />
         <View style={styles.footerView}>

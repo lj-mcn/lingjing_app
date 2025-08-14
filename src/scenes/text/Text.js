@@ -8,7 +8,9 @@ import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
 import Button from '../../components/Button'
+// import ConfigTester from '../../components/ConfigTester'
 import digitalHumanService from '../../services/DigitalHumanService'
+import responseLLMService from '../../services/ResponseLLMService'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
 import { UserDataContext } from '../../context/UserDataContext'
@@ -29,11 +31,13 @@ export default function TextChat() {
   const [messages, setMessages] = useState([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  // const [showConfigTester, setShowConfigTester] = useState(false)
   const [chatStarted, setChatStarted] = useState(false)
   const [showAngryVideo, setShowAngryVideo] = useState(false)
   const [showHappyVideo, setShowHappyVideo] = useState(false)
   const [showSadVideo, setShowSadVideo] = useState(false)
   const [showScaredVideo, setShowScaredVideo] = useState(false)
+  const [memoryStats, setMemoryStats] = useState({ turnCount: 0, hasHistory: false })
 
   useEffect(() => {
     console.log('Text screen - 嘎巴龙文字交互')
@@ -44,6 +48,19 @@ export default function TextChat() {
     if (messages.length > 0 && scrollViewRef.current) {
       scrollViewRef.current.scrollToEnd({ animated: true })
     }
+  }, [messages])
+
+  // 更新记忆状态
+  useEffect(() => {
+    const updateMemoryStats = () => {
+      const stats = responseLLMService.getMemoryStats()
+      setMemoryStats(stats)
+    }
+
+    updateMemoryStats()
+    // 每次消息变化时更新记忆状态
+    const interval = setInterval(updateMemoryStats, 1000)
+    return () => clearInterval(interval)
   }, [messages])
 
   const startChat = () => {
@@ -67,8 +84,8 @@ export default function TextChat() {
       message: userMessage,
       timestamp: new Date().toLocaleTimeString(),
     }
-    setMessages(prev => [...prev, newUserMessage])
-    
+    setMessages((prev) => [...prev, newUserMessage])
+
     // 检测特殊消息并触发相应视频和自定义回复
     if (userMessage === '你好笨啊！') {
       // 重置其他视频状态
@@ -76,68 +93,68 @@ export default function TextChat() {
       setShowSadVideo(false)
       setShowScaredVideo(false)
       setShowAngryVideo(true)
-      
+
       // 添加嘎巴龙的特定回复
       const angryResponse = {
         role: 'assistant',
         message: '用 "笨" 来否定别人的努力，并不是解决问题的好方式。如果你愿意好好沟通，我依然会尽力帮你；但如果只是发泄情绪，那我暂时没办法帮到你，嘎巴。',
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toLocaleTimeString(),
       }
-      setMessages(prev => [...prev, angryResponse])
+      setMessages((prev) => [...prev, angryResponse])
       setIsTyping(false)
       return
     }
-    
+
     if (userMessage === '嘎巴龙，我们做朋友吧！') {
       // 重置其他视频状态
       setShowAngryVideo(false)
       setShowSadVideo(false)
       setShowScaredVideo(false)
       setShowHappyVideo(true)
-      
+
       // 添加嘎巴龙的开心回复
       const happyResponse = {
         role: 'assistant',
         message: '哇哦！真的吗？我好开心啊！当然愿意和你做朋友！我们可以一起聊天、一起学习、一起成长！有了朋友真是太棒了，嘎巴！✨',
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toLocaleTimeString(),
       }
-      setMessages(prev => [...prev, happyResponse])
+      setMessages((prev) => [...prev, happyResponse])
       setIsTyping(false)
       return
     }
-    
+
     if (userMessage === '哥们，亮屁兔真比你帅吧！') {
       // 重置其他视频状态
       setShowAngryVideo(false)
       setShowHappyVideo(false)
       setShowScaredVideo(false)
       setShowSadVideo(true)
-      
+
       // 添加嘎巴龙的伤心回复
       const sadResponse = {
         role: 'assistant',
         message: '你怎么能这么说呀…… 我知道亮屁兔眼睛圆圆的很可爱，也知道大家可能更喜欢他毛茸茸的样子，但我每天都在努力记住你的喜好，学你喜欢的梗，就连说话的语气都偷偷练了好久…… 原来在你心里，我连 "帅" 这个评价都不配拥有吗？',
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toLocaleTimeString(),
       }
-      setMessages(prev => [...prev, sadResponse])
+      setMessages((prev) => [...prev, sadResponse])
       setIsTyping(false)
       return
     }
-    
+
     if (userMessage === '你家里的垃圾都被垃圾鸡偷走了！') {
       // 重置其他视频状态
       setShowAngryVideo(false)
       setShowHappyVideo(false)
       setShowSadVideo(false)
       setShowScaredVideo(true)
-      
+
       // 添加嘎巴龙的害怕回复
       const scaredResponse = {
         role: 'assistant',
         message: '啊啊啊！垃圾鸡？！那可是最可怕的生物了！它们会把所有的垃圾都投走吗？我...我好害怕呀！快保护我，嘎巴！😱',
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toLocaleTimeString(),
       }
-      setMessages(prev => [...prev, scaredResponse])
+      setMessages((prev) => [...prev, scaredResponse])
       setIsTyping(false)
       return
     }
@@ -146,7 +163,8 @@ export default function TextChat() {
       // 发送文本消息给数字人
       const result = await digitalHumanService.sendTextMessage(userMessage)
       if (!result.success) {
-        Alert.alert('错误', `发送消息失败: ${result.error}`)
+        console.error('发送消息失败:', result.error)
+        // Alert.alert('错误', `发送消息失败: ${result.error}`)
         // 添加错误消息
         const errorMessage = {
           role: 'assistant',
@@ -157,7 +175,8 @@ export default function TextChat() {
       }
     } catch (error) {
       console.error('发送消息错误:', error)
-      Alert.alert('错误', '发送消息时出现异常')
+      console.error('发送消息时出现异常')
+      // Alert.alert('错误', '发送消息时出现异常')
     } finally {
       setIsTyping(false)
     }
@@ -184,18 +203,26 @@ export default function TextChat() {
   }
 
   const clearMessages = () => {
-    Alert.alert(
-      '清空对话',
-      '确定要清空所有对话记录吗？',
-      [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '确定',
-          onPress: () => setMessages([]),
-          style: 'destructive',
-        },
-      ],
-    )
+    console.log('Clear messages requested')
+    // Alert.alert(
+    //   '清空对话',
+    //   '确定要清空所有对话记录和记忆吗？这将删除所有聊天历史。',
+    //   [
+    //     { text: '取消', style: 'cancel' },
+    //     {
+    //       text: '确定',
+    //       onPress: () => {
+    //         setMessages([])
+    //         // 清空对话记忆
+    //         responseLLMService.clearMemory()
+    //       },
+    //       style: 'destructive',
+    //     },
+    //   ],
+    // )
+    // 直接清空
+    setMessages([])
+    responseLLMService.clearMemory()
   }
 
   return (
@@ -232,12 +259,12 @@ export default function TextChat() {
               onScaredVideoEnd={handleScaredVideoEnd}
             />
             <Text style={[styles.avatarStatus, { color: colorScheme.text }]}>
-              {!chatStarted ? '😊 点击纸团开始对话' :
-               showAngryVideo ? '😡 嘎巴龙生气了！' :
-               showHappyVideo ? '🥳 嘎巴龙好开心！' :
-               showSadVideo ? '😢 嘎巴龙伤心了...' :
-               showScaredVideo ? '😱 嘎巴龙害怕了！' :
-               isTyping ? '💭 正在思考...' : '😊 准备聊天'}
+              {!chatStarted ? '😊 点击纸团开始对话'
+                : showAngryVideo ? '😡 嘎巴龙生气了！'
+                  : showHappyVideo ? '🥳 嘎巴龙好开心！'
+                    : showSadVideo ? '😢 嘎巴龙伤心了...'
+                      : showScaredVideo ? '😱 嘎巴龙害怕了！'
+                        : isTyping ? '💭 正在思考...' : '😊 准备聊天'}
             </Text>
           </View>
 
@@ -264,7 +291,14 @@ export default function TextChat() {
               {/* 对话区域 */}
               <View style={[styles.chatContainer, { backgroundColor: colorScheme.cardBackground }]}>
                 <View style={styles.chatHeader}>
-                  <Text style={[styles.chatTitle, { color: colorScheme.text }]}>对话记录</Text>
+                  <View style={styles.chatHeaderLeft}>
+                    <Text style={[styles.chatTitle, { color: colorScheme.text }]}>对话记录</Text>
+                    {memoryStats.hasHistory && (
+                      <Text style={[styles.memoryStatus, { color: isDark ? '#999' : '#666' }]}>
+                        🧠 记忆: {memoryStats.turnCount}轮
+                      </Text>
+                    )}
+                  </View>
                   {messages.length > 0 && (
                     <TouchableOpacity onPress={clearMessages}>
                       <Text style={styles.clearButton}>🗑️ 清空</Text>
@@ -346,6 +380,18 @@ export default function TextChat() {
             </>
           )}
 
+          {/* 测试按钮 */}
+          {/* <TouchableOpacity
+            style={styles.testButton}
+            onPress={() => setShowConfigTester(true)}
+          >
+            <Text style={styles.testButtonText}>🧪 测试文字服务</Text>
+          </TouchableOpacity>
+
+          {/* 配置测试器 */}
+          {/* {showConfigTester && (
+            <ConfigTester onClose={() => setShowConfigTester(false)} />
+          )} */}
         </View>
       </KeyboardAvoidingView>
     </ScreenTemplate>
@@ -355,16 +401,16 @@ export default function TextChat() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
+    padding: 20, // 与语音界面保持一致
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 30, // 与语音界面保持一致
   },
   title: {
     fontSize: fontSize.xLarge,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 8, // 与语音界面保持一致
     textAlign: 'center',
   },
   subtitle: {
@@ -375,27 +421,21 @@ const styles = StyleSheet.create({
   avatarContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 15,
-    marginBottom: 20,
+    paddingVertical: 20, // 与语音界面保持一致
+    position: 'relative',
+    marginBottom: 30, // 与语音界面保持一致
   },
   avatar: {
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    marginBottom: 15, // 与语音界面保持一致
+    // 移除阴影，由DigitalAvatar组件内部处理
   },
   avatarVideo: {
-    width: 120,
-    height: 160,
-    borderRadius: 12,
+    width: 200, // 统一尺寸，与语音界面一致
+    height: 300,
+    borderRadius: 15, // 统一圆角
   },
   avatarStatus: {
-    fontSize: fontSize.small,
+    fontSize: fontSize.middle, // 与语音界面保持一致
     textAlign: 'center',
     fontWeight: '500',
   },
@@ -419,9 +459,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
+  chatHeaderLeft: {
+    flex: 1,
+  },
   chatTitle: {
     fontSize: fontSize.large,
     fontWeight: 'bold',
+  },
+  memoryStatus: {
+    fontSize: fontSize.xSmall,
+    marginTop: 2,
+    fontStyle: 'italic',
   },
   clearButton: {
     color: '#ff4757',

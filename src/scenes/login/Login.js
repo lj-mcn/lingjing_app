@@ -39,22 +39,59 @@ export default function Login() {
   }, [])
 
   const onLoginPress = async () => {
+    if (!email.trim() || !password.trim()) {
+      console.error('Login validation failed: Missing email or password')
+      // alert('Please enter both email and password.')
+      return
+    }
+
     try {
       setSpinner(true)
+      console.log('Attempting to sign in user:', email)
       const response = await signInWithEmailAndPassword(auth, email, password)
       const { uid } = response.user
+      console.log('Sign in successful, UID:', uid)
+
       const usersRef = doc(firestore, 'users', uid)
       const firestoreDocument = await getDoc(usersRef)
-      if (!firestoreDocument.exists) {
+
+      if (!firestoreDocument.exists()) {
+        console.error('User document does not exist in Firestore')
         setSpinner(false)
-        alert('User does not exist anymore.')
+        // alert('User does not exist anymore.')
         return
       }
+
+      console.log('Login successful, user data:', firestoreDocument.data())
       setSpinner(false)
       // 登录成功后，Navigation.js会自动切换到RootStack，RootStack会首先显示视频
     } catch (error) {
+      console.error('Login error:', error.code, error.message)
       setSpinner(false)
-      alert(error)
+
+      let errorMessage = 'Login failed. Please try again.'
+      switch (error.code) {
+        case 'auth/user-not-found':
+          errorMessage = 'No user found with this email address.'
+          break
+        case 'auth/wrong-password':
+          errorMessage = 'Incorrect password. Please try again.'
+          break
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address format.'
+          break
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many failed login attempts. Please try again later.'
+          break
+        case 'auth/network-request-failed':
+          errorMessage = 'Network error. Please check your connection.'
+          break
+        default:
+          errorMessage = error.message
+      }
+
+      console.error('Login error message:', errorMessage)
+      // alert(errorMessage)
     }
   }
 

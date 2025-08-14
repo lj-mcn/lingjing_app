@@ -3,24 +3,22 @@ import {
   View, StyleSheet, Dimensions, TouchableOpacity, ImageBackground, Image,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import { useRoute } from '@react-navigation/native'
+import { useAppFlow } from '../../context/AppFlowContext'
 
 const { width, height } = Dimensions.get('window')
 
 export default function MusicSettings() {
-  const route = useRoute()
-  const { onMusicChoice } = route.params || {}
+  const { markMusicSettingsCompleted } = useAppFlow()
 
   const handleMuteChoice = () => {
     console.log('User chose to mute')
-    onMusicChoice && onMusicChoice(false)
+    markMusicSettingsCompleted(false)
   }
 
   const handleOkChoice = () => {
     console.log('User chose OK for music')
-    onMusicChoice && onMusicChoice(true)
+    markMusicSettingsCompleted(true)
   }
-
 
   return (
     <View style={styles.container}>
@@ -35,8 +33,8 @@ export default function MusicSettings() {
             style={styles.imageButton}
             onPress={handleMuteChoice}
           >
-            <Image 
-              source={require('../../../assets/images/silent.png')} 
+            <Image
+              source={require('../../../assets/images/silent.png')}
               style={styles.buttonImage}
               resizeMode="contain"
             />
@@ -46,8 +44,8 @@ export default function MusicSettings() {
             style={styles.imageButton}
             onPress={handleOkChoice}
           >
-            <Image 
-              source={require('../../../assets/images/iknow.png')} 
+            <Image
+              source={require('../../../assets/images/iknow.png')}
               style={styles.buttonImage}
               resizeMode="contain"
             />

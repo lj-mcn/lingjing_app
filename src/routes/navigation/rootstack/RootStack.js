@@ -63,11 +63,6 @@ export default function RootStack() {
     return () => subscription.remove()
   }, [])
 
-  const handleMusicChoice = (enableMusic) => {
-    console.log('Music choice:', enableMusic ? 'enabled' : 'muted')
-    markMusicSettingsCompleted(enableMusic)
-  }
-
   return (
     <Stack.Navigator
       screenOptions={{
@@ -78,15 +73,13 @@ export default function RootStack() {
         <Stack.Screen
           name="MusicSettings"
           component={MusicSettings}
-          initialParams={{ onMusicChoice: handleMusicChoice }}
         />
       ) : !videoWatched ? (
         <Stack.Screen
           name="IntroVideo"
           component={VideoPlayer}
-          initialParams={{ 
-            onVideoEnd: () => markVideoWatched(), 
-            musicEnabled: musicEnabled 
+          initialParams={{
+            musicEnabled,
           }}
         />
       ) : (

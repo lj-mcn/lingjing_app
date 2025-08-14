@@ -46,7 +46,8 @@ export default function Edit() {
       if (Platform.OS === 'ios') {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
         if (status !== 'granted') {
-          alert('Permission is required for use.')
+          console.error('Permission is required for use.')
+          // alert('Permission is required for use.')
           return
         }
       }
@@ -77,7 +78,8 @@ export default function Edit() {
           },
           (error) => {
             console.log(error)
-            alert('Upload failed.')
+            console.error('Upload failed.')
+            // alert('Upload failed.')
           },
           () => {
             getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
@@ -88,7 +90,8 @@ export default function Edit() {
       }
     } catch (e) {
       console.log('error', e.message)
-      alert('The size may be too much.')
+      console.error('The size may be too much.')
+      // alert('The size may be too much.')
     }
   }
 
@@ -104,13 +107,15 @@ export default function Edit() {
       await updateDoc(usersRef, data)
       navigation.goBack()
     } catch (e) {
-      alert(e)
+      console.error('Profile update error:', e)
+      // alert(e)
     }
   }
 
   const onUpdatePassword = async () => {
     if (password !== confirmPassword) {
-      alert("Passwords don't match.")
+      console.error("Passwords don't match.")
+      // alert("Passwords don't match.")
       return
     }
     try {
@@ -129,7 +134,8 @@ export default function Edit() {
       setConfirmPassword('')
     } catch (e) {
       console.log(e)
-      alert(e)
+      console.error('Password update error:', e)
+      // alert(e)
     } finally {
       setSpinner(false)
     }

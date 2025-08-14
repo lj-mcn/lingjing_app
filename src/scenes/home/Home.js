@@ -79,7 +79,8 @@ export default function Home() {
   }, [navigation])
 
   const headerButtonPress = () => {
-    alert('Tapped header button')
+    console.log('Tapped header button')
+    // alert('Tapped header button')
   }
 
   const handleBackToVillage = () => {
@@ -137,7 +138,6 @@ export default function Home() {
     weekday: 'long',
   })
 
-
   const swipeGesture = Gesture.Pan()
     .onEnd((event) => {
       const { translationX, velocityX } = event
@@ -153,7 +153,7 @@ export default function Home() {
     })
 
   return (
-    <ImageBackground 
+    <ImageBackground
       source={require('../../../assets/images/background.png')}
       style={styles.container}
       resizeMode="cover"

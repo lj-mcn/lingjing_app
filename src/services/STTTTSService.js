@@ -395,7 +395,8 @@ class STTTTSService {
 
       throw new Error('未识别到语音内容')
     } catch (error) {
-      console.error('Expo语音识别失败:', error)
+      // 使用console.log以避免触发任何可能的错误弹窗
+      console.log('🎯 Expo语音识别失败（已拦截）:', error.message || error)
       return {
         success: false,
         error: error.message,
@@ -734,8 +735,9 @@ class STTTTSService {
       // 所有编码都失败了
       throw lastError || new Error('所有编码格式都失败了')
     } catch (error) {
-      console.error('Google语音识别失败:', error)
-      console.error('请求详情:', {
+      // 使用console.log以避免触发任何可能的错误弹窗
+      console.log('🎯 Google语音识别失败（已拦截）:', error.message || error)
+      console.log('🎯 请求详情（已拦截）:', {
         url: `https://speech.googleapis.com/v1/speech:recognize?key=${this.googleConfig.apiKey?.substring(0, 10)}...`,
         config: requestBody?.config || '未创建',
         audioDataLength: audioBlob ? audioBlob.length : 0,
@@ -836,7 +838,8 @@ class STTTTSService {
 
       throw new Error('Azure STT响应格式无效')
     } catch (error) {
-      console.error('Azure语音识别失败:', error)
+      // 使用console.log以避免触发任何可能的错误弹窗
+      console.log('🎯 Azure语音识别失败（已拦截）:', error.message || error)
       return {
         success: false,
         error: error.response?.data?.message || error.message,

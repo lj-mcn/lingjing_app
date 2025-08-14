@@ -5,6 +5,7 @@ import {
 import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
+// import ConfigTester from '../../components/ConfigTester'
 import digitalHumanService from '../../services/DigitalHumanService'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
@@ -23,7 +24,10 @@ export default function Voice() {
 
   const [messages, setMessages] = useState([])
   const [isListening, setIsListening] = useState(false)
+  // const [showConfigTester, setShowConfigTester] = useState(false)
   const [chatStarted, setChatStarted] = useState(false)
+  const [smartConversationMode, setSmartConversationMode] = useState(false)
+  const [vadState, setVadState] = useState('idle') // 语音活动状态
 
   useEffect(() => {
     console.log('Voice screen - 嘎巴龙语音交互')
@@ -41,7 +45,8 @@ export default function Voice() {
     setIsListening(true)
     const result = await digitalHumanService.startVoiceRecording()
     if (!result.success) {
-      Alert.alert('错误', `无法启动语音录制: ${result.error}`)
+      console.error('无法启动语音录制:', result.error)
+      // Alert.alert('错误', `无法启动语音录制: ${result.error}`)
       setIsListening(false)
     }
   }
@@ -50,30 +55,79 @@ export default function Voice() {
     setIsListening(false)
     const result = await digitalHumanService.stopVoiceRecording()
     if (!result.success) {
-      Alert.alert('错误', `语音处理失败: ${result.error}`)
+      console.error('语音处理失败:', result.error)
+      // Alert.alert('错误', `语音处理失败: ${result.error}`)
     }
   }
+
+
+  // 切换智能对话模式
+  const toggleSmartConversationMode = async () => {
+    if (smartConversationMode) {
+      const result = await digitalHumanService.stopSmartConversation()
+      if (result.success) {
+        setSmartConversationMode(false)
+        setIsListening(false)
+        setVadState('idle')
+      }
+    } else {
+      if (!chatStarted) {
+        setChatStarted(true)
+      }
+
+      const result = await digitalHumanService.startSmartConversation()
+      if (result.success) {
+        setSmartConversationMode(true)
+        setIsListening(true)
+        setVadState('listening')
+      }
+    }
+  }
+
+  // 监听数字人服务状态变化
+  useEffect(() => {
+    digitalHumanService.setCallbacks({
+      onStatusChange: (status) => {
+        if (status === 'listening') {
+          setVadState('listening')
+        } else if (status === 'speaking') {
+          setVadState('speaking')
+        } else if (status === 'silence') {
+          setVadState('silence')
+        } else if (status === 'processing') {
+          setVadState('processing')
+        } else if (status === 'idle') {
+          setVadState('idle')
+        }
+      },
+      onMessage: handleMessage
+    })
+
+    // 清理函数，组件卸载时清理状态
+    return () => {
+      // 如果组件卸载时还有活跃的对话模式，进行清理
+      if (smartConversationMode) {
+        digitalHumanService.stopSmartConversation()
+      }
+    }
+  }, [smartConversationMode])
 
   return (
     <ScreenTemplate>
       <ScrollView style={styles.container}>
-        {/* 头部标题 */}
-        <View style={styles.headerContainer}>
-          <Text style={[styles.title, { color: colorScheme.text }]}>
+        {/* 头部标题 - 隐藏 */}
+        <View style={[styles.headerContainer, { opacity: 0, height: 0 }]}>
+          <Text style={[styles.title, { color: 'transparent', opacity: 0 }]}>
             🎤 语音对话
           </Text>
-          <Text style={[styles.subtitle, { color: colorScheme.text }]}>
+          <Text style={[styles.subtitle, { color: 'transparent', opacity: 0 }]}>
             与嘎巴龙进行语音交互
           </Text>
         </View>
 
         {/* 数字人区域 */}
         <View style={styles.avatarContainer}>
-          <View style={[styles.backgroundDecoration, {
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
-          }]}
-          />
-
+          {/* 移除旧的背景装饰，使用沉浸式效果 */}
           <DigitalAvatar
             style={styles.avatar}
             videoStyle={styles.avatarVideo}
@@ -81,10 +135,6 @@ export default function Voice() {
             enableInteraction={chatStarted}
           />
 
-          <Text style={[styles.avatarStatus, { color: colorScheme.text }]}>
-            {!chatStarted ? '😊 点击纸团开始对话'
-              : isListening ? '🎧 正在聆听...' : '💤 等待语音输入'}
-          </Text>
         </View>
 
         {!chatStarted ? (
@@ -101,37 +151,51 @@ export default function Voice() {
                 resizeMode="contain"
               />
             </TouchableOpacity>
-            <Text style={[styles.paperBallText, { color: colorScheme.text }]}>
-              点击纸团开始语音对话 ✨
-            </Text>
           </View>
         ) : (
           <>
-            {/* 语音控制按钮 */}
-            <View style={styles.controlContainer}>
+            {/* 智能对话控制按钮 */}
+            <View style={styles.smartControlContainer}>
               <TouchableOpacity
                 style={[
-                  styles.voiceButton,
-                  isListening ? styles.voiceButtonActive : styles.voiceButtonInactive,
+                  styles.smartButton,
+                  smartConversationMode ? styles.smartButtonActive : styles.smartButtonInactive,
                 ]}
-                onPress={isListening ? stopVoiceRecording : startVoiceRecording}
+                onPress={toggleSmartConversationMode}
                 activeOpacity={0.8}
               >
-                <Text style={styles.voiceButtonIcon}>
-                  {isListening ? '⏹️' : '🎤'}
-                </Text>
-                <Text style={styles.voiceButtonText}>
-                  {isListening ? '停止录音' : '开始语音'}
+                <Text style={styles.smartButtonIcon}>
+                  {smartConversationMode ? '🤖' : '🚀'}
                 </Text>
               </TouchableOpacity>
+
             </View>
 
-            {/* 对话历史 */}
-            <View style={[styles.chatContainer, { backgroundColor: colorScheme.cardBackground }]}>
-              <Text style={[styles.chatTitle, { color: colorScheme.text }]}>对话记录</Text>
+
+            {/* 原有的单次录音按钮（在智能对话模式下隐藏） */}
+            {!smartConversationMode && (
+              <View style={styles.controlContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.voiceButton,
+                    isListening ? styles.voiceButtonActive : styles.voiceButtonInactive,
+                  ]}
+                  onPress={isListening ? stopVoiceRecording : startVoiceRecording}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.voiceButtonIcon}>
+                    {isListening ? '⏹️' : '🎤'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* 对话历史 - 隐藏 */}
+            <View style={[styles.chatContainer, { backgroundColor: 'transparent', opacity: 0 }]}>
+              <Text style={[styles.chatTitle, { color: 'transparent' }]}>对话记录</Text>
               <ScrollView style={styles.messagesContainer}>
                 {messages.length === 0 ? (
-                  <Text style={[styles.emptyText, { color: colorScheme.text }]}>
+                  <Text style={[styles.emptyText, { color: 'transparent' }]}>
                     按下语音按钮开始对话吧！🗣️
                   </Text>
                 ) : (
@@ -141,11 +205,12 @@ export default function Voice() {
                       style={[
                         styles.messageItem,
                         msg.role === 'user' ? styles.userMessage : styles.assistantMessage,
+                        { opacity: 0 },
                       ]}
                     >
                       <Text style={[
                         styles.messageText,
-                        { color: msg.role === 'user' ? colors.white : colorScheme.text },
+                        { color: 'transparent' },
                       ]}
                       >
                         {msg.role === 'user' ? '👤 我：' : '🐉 嘎巴龙：'}{msg.message}
@@ -158,6 +223,18 @@ export default function Voice() {
           </>
         )}
 
+        {/* 测试按钮 */}
+        {/* <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => setShowConfigTester(true)}
+        >
+          <Text style={styles.testButtonText}>🧪 测试语音服务</Text>
+        </TouchableOpacity>
+
+        {/* 配置测试器 */}
+        {/* {showConfigTester && (
+          <ConfigTester onClose={() => setShowConfigTester(false)} />
+        )} */}
       </ScrollView>
     </ScreenTemplate>
   )
@@ -192,33 +269,27 @@ const styles = StyleSheet.create({
   },
   avatar: {
     marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    // 移除阴影，由DigitalAvatar组件内部处理
   },
   avatarVideo: {
-    width: 180,
-    height: 250,
-    borderRadius: 15,
+    width: 200, // 统一尺寸
+    height: 300,
+    borderRadius: 15, // 统一圆角
   },
   avatarStatus: {
     fontSize: fontSize.middle,
     textAlign: 'center',
     fontWeight: '500',
   },
-  backgroundDecoration: {
-    position: 'absolute',
-    width: 250,
-    height: 320,
-    borderRadius: 30,
-    zIndex: -1,
-    opacity: 0.3,
-  },
+  // 移除旧的背景装饰，使用沉浸式效果
+  // backgroundDecoration: {
+  //   position: 'absolute',
+  //   width: 250,
+  //   height: 320,
+  //   borderRadius: 30,
+  //   zIndex: -1,
+  //   opacity: 0.3,
+  // },
   controlContainer: {
     alignItems: 'center',
     marginBottom: 30,
@@ -242,14 +313,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff4757',
   },
   voiceButtonInactive: {
-    backgroundColor: colors.tertiary,
+    backgroundColor: 'transparent',
   },
   voiceButtonIcon: {
     fontSize: 32,
     marginBottom: 8,
+    opacity: 0,
   },
   voiceButtonText: {
-    color: colors.white,
+    color: 'transparent',
     fontSize: fontSize.small,
     fontWeight: 'bold',
   },
@@ -324,5 +396,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     opacity: 0.8,
+  },
+  statusText: {
+    fontSize: 14,
+    textAlign: 'center',
+    opacity: 0.8,
+    fontStyle: 'italic',
+  },
+  smartControlContainer: {
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingHorizontal: 20,
+  },
+  smartButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 35,
+    borderRadius: 30,
+    marginBottom: 10,
+    minWidth: 220,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  smartButtonActive: {
+    backgroundColor: '#ff6b6b',
+    shadowColor: '#ff6b6b',
+  },
+  smartButtonInactive: {
+    backgroundColor: '#4ecdc4',
+    shadowColor: '#4ecdc4',
+  },
+  smartButtonIcon: {
+    fontSize: 28,
+    marginBottom: 5,
+  },
+  smartButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 })

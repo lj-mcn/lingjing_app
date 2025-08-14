@@ -1,7 +1,15 @@
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message'
 import { fontSize, colors } from '../theme'
 
-const showToast = ({ title, body, isDark }) => {
+const showToast = ({
+  title, body, isDark, type = 'success',
+}) => {
+  // 注释掉错误类型的Toast，但保留日志记录
+  if (type === 'error' || title?.includes('错误') || title?.includes('失败') || body?.includes('错误') || body?.includes('失败')) {
+    console.log('Toast错误消息（已禁用显示）:', { title, body })
+    return
+  }
+
   Toast.show({
     type: 'success',
     text1: title,
@@ -46,20 +54,21 @@ const toastConfig = {
     )
   },
   /*
+    注释掉错误类型Toast，但保留日志记录
     Overwrite 'error' type,
     by modifying the existing `ErrorToast` component
   */
-  error: (props) => (
-    <ErrorToast
-      {...props}
-      text1Style={{
-        fontSize: 17,
-      }}
-      text2Style={{
-        fontSize: 15,
-      }}
-    />
-  ),
+  // error: (props) => (
+  //   <ErrorToast
+  //     {...props}
+  //     text1Style={{
+  //       fontSize: 17,
+  //     }}
+  //     text2Style={{
+  //       fontSize: 15,
+  //     }}
+  //   />
+  // ),
   /*
     Or create a completely new type - `tomatoToast`,
     building the layout from scratch.

@@ -20,7 +20,8 @@ export default function App() {
           ? <RootStack />
           : <LoginNavigator />}
       </NavigationContainer>
-      <Toast config={toastConfig} />
+      {/* 注释掉Toast组件以禁用所有弹窗，但保留日志记录 */}
+      {/* <Toast config={toastConfig} /> */}
     </>
   )
 }

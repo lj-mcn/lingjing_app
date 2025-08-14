@@ -11,7 +11,7 @@ const Tab = createBottomTabNavigator()
 
 const TabNavigator = () => (
   <Tab.Navigator
-    tabBar={props => <CustomTabBar {...props} />}
+    tabBar={(props) => <CustomTabBar {...props} />}
     defaultScreenOptions={{
       headerShown: false,
       headerTransparent: true,
