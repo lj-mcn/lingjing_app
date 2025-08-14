@@ -54,17 +54,17 @@ export const HomeNavigator = () => {
             <Stack.Screen
               name="Voice"
               component={Voice}
-              options={{ 
+              options={{
                 title: '语音对话',
-                headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
+                headerBackground: scheme === 'dark' ? null : () => <HeaderStyle />,
               }}
             />
             <Stack.Screen
               name="Text"
               component={TextChat}
-              options={{ 
+              options={{
                 title: '文字对话',
-                headerBackground: scheme === 'dark' ? null: () => <HeaderStyle />,
+                headerBackground: scheme === 'dark' ? null : () => <HeaderStyle />,
               }}
             />
             <Stack.Screen

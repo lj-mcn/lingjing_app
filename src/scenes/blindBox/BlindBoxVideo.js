@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react'
-import { View, StyleSheet, Dimensions, TouchableOpacity, Text, Modal } from 'react-native'
+import {
+  View, StyleSheet, Dimensions, TouchableOpacity, Text, Modal,
+} from 'react-native'
 import { Video } from 'expo-av'
 import { StatusBar } from 'expo-status-bar'
 import { useNavigation } from '@react-navigation/native'
@@ -50,7 +52,7 @@ export default function BlindBoxVideo() {
   return (
     <View style={styles.container}>
       <StatusBar hidden />
-      
+
       {currentPhase === 'opening' && (
         <Video
           ref={videoRef}
@@ -86,14 +88,14 @@ export default function BlindBoxVideo() {
 
       <Modal
         visible={showRewardModal}
-        transparent={true}
+        transparent
         animationType="fade"
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.congratsText}>🎉 恭喜你获得</Text>
             <Text style={styles.rewardText}>{rewardName}!</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.confirmButton}
               onPress={handleConfirmReward}
             >

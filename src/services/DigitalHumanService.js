@@ -68,7 +68,7 @@ class DigitalHumanService {
       },
       onEnrollmentResponse: (response) => {
         this.handleEnrollmentResponse(response)
-      }
+      },
     })
   }
 
@@ -87,10 +87,10 @@ class DigitalHumanService {
     if (response.success) {
       console.log('用户说:', response.asr_result)
       console.log('AI回复:', response.llm_response)
-      
+
       this.notifyMessage('user', response.asr_result)
       this.notifyMessage('assistant', response.llm_response)
-      
+
       if (response.response_type === 'voice_chat_success') {
         this.notifyStatusChange('speaking')
         // TTS音频已在SenceVoiceService中自动播放
@@ -101,7 +101,7 @@ class DigitalHumanService {
     } else {
       console.error('SenceVoice响应错误:', response.error)
       this.notifyError(response.message || response.error)
-      
+
       // 显示ASR结果（如果有）
       if (response.asr_result) {
         this.notifyMessage('user', response.asr_result)
@@ -124,7 +124,7 @@ class DigitalHumanService {
   async initialize(config = {}) {
     try {
       console.log('开始初始化数字人服务...')
-      
+
       // 尝试连接SenceVoice服务
       if (config.sencevoice_url) {
         try {
@@ -235,7 +235,7 @@ class DigitalHumanService {
       }
 
       console.log(`✅ 语音对话已开始 (${recordingResult.mode}模式)`)
-      
+
       // 如果使用SenceVoice且需要声纹注册，给用户提示
       if (this.useSenceVoice && senceVoiceService.isEnrollmentRequired()) {
         this.notifyMessage('system', '检测到需要声纹注册，请录制至少3秒的音频用于注册')
@@ -288,7 +288,7 @@ class DigitalHumanService {
             console.log('SenceVoice响应:', voiceResult)
             // 语音响应会通过回调处理
           }
-          
+
           this.isConversing = false
           this.notifyConversationEnd()
           return true
@@ -297,7 +297,7 @@ class DigitalHumanService {
           this.notifyError(`SenceVoice处理失败: ${senceVoiceError.message}`)
         }
       }
-      
+
       // 传统模式处理
       console.log('使用传统语音处理模式')
       // 语音转文字
@@ -528,7 +528,7 @@ class DigitalHumanService {
     if (this.useSenceVoice) {
       return {
         connectionStatus: senceVoiceService.getConnectionStatus(),
-        serverStatus: senceVoiceService.getServerStatus()
+        serverStatus: senceVoiceService.getServerStatus(),
       }
     }
     return null
@@ -541,7 +541,7 @@ class DigitalHumanService {
       isConversing: this.isConversing,
       audioStatus: audioService.getRecordingStatus(),
       wsConnected: webSocketService.isConnected(),
-      useSenceVoice: this.useSenceVoice
+      useSenceVoice: this.useSenceVoice,
     }
 
     if (this.useSenceVoice) {
@@ -558,7 +558,7 @@ class DigitalHumanService {
       await audioService.cleanup()
       webSocketService.disconnect()
       responseLLMService.cleanup()
-      
+
       if (this.useSenceVoice) {
         senceVoiceService.cleanup()
       }

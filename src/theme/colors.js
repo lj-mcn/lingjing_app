@@ -1,9 +1,9 @@
 const colors = {
-  darkPurple: '#231d54',
+  darkPurple: '#000000',
   dark: '#1e1e1e',
-  purple: '#8100ff',
+  purple: '#000000',
   blueLight: '#788eec',
-  lightPurple: '#9388db',
+  lightPurple: '#000000',
   lightGrayPurple: '#f7f7fb',
   pink: '#ff3d69',
   gray: '#797777',

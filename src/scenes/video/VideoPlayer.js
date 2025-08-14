@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react'
-import { View, StyleSheet, Dimensions, TouchableOpacity, Text, Modal } from 'react-native'
+import {
+  View, StyleSheet, Dimensions, TouchableOpacity, Text, Modal,
+} from 'react-native'
 import { Video } from 'expo-av'
 import { StatusBar } from 'expo-status-bar'
 import { useRoute, useNavigation } from '@react-navigation/native'
@@ -125,20 +127,20 @@ export default function VideoPlayer() {
 
       <Modal
         visible={showStorePrompt && !isReturnToVillage}
-        transparent={true}
+        transparent
         animationType="fade"
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>发现金贱猪商店！</Text>
             <Text style={styles.modalText}>想要去看看吗？</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.storeButton}
               onPress={handleStoreClick}
             >
               <Text style={styles.buttonText}>进入商店</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.closeButton}
               onPress={handleSkipStore}
             >
@@ -150,14 +152,14 @@ export default function VideoPlayer() {
 
       <Modal
         visible={showGabalonReward && !isReturnToVillage}
-        transparent={true}
+        transparent
         animationType="fade"
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>🎉 恭喜你获得第一个角色</Text>
             <Text style={styles.characterName}>嘎巴龙！</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.storeButton}
               onPress={handleGabalonRewardConfirm}
             >

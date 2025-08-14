@@ -23,8 +23,8 @@ export default function MusicSettings() {
   return (
     <View style={styles.container}>
       <StatusBar hidden />
-      <ImageBackground 
-        source={require('../../../assets/images/提示弹窗.png')} 
+      <ImageBackground
+        source={require('../../../assets/images/提示弹窗.png')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >

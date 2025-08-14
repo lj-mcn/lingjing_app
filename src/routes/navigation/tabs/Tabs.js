@@ -2,6 +2,7 @@ import React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import FontIcon from 'react-native-vector-icons/FontAwesome'
 import { colors } from 'theme'
+import CustomTabBar from './CustomTabBar'
 
 // stack navigators
 import { HomeNavigator, ProfileNavigator, ConnectNavigator } from '../stacks'
@@ -10,15 +11,7 @@ const Tab = createBottomTabNavigator()
 
 const TabNavigator = () => (
   <Tab.Navigator
-    options={{
-      tabBarStyle: {
-        // backgroundColor: 'white',
-        // borderTopColor: 'gray',
-        // borderTopWidth: 1,
-        // paddingBottom: 5,
-        // paddingTop: 5,
-      },
-    }}
+    tabBar={props => <CustomTabBar {...props} />}
     defaultScreenOptions={{
       headerShown: false,
       headerTransparent: true,
@@ -39,20 +32,6 @@ const TabNavigator = () => (
         tabBarIcon: ({ color, size }) => (
           <FontIcon
             name="home"
-            color={color}
-            size={size}
-          />
-        ),
-      }}
-    />
-    <Tab.Screen
-      name="ConnectTab"
-      component={ConnectNavigator}
-      options={{
-        tabBarLabel: 'Connect',
-        tabBarIcon: ({ color, size }) => (
-          <FontIcon
-            name="share-alt"
             color={color}
             size={size}
           />
