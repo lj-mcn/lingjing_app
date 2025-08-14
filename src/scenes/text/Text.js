@@ -26,6 +26,10 @@ export default function TextChat() {
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [chatStarted, setChatStarted] = useState(false)
+  const [showAngryVideo, setShowAngryVideo] = useState(false)
+  const [showHappyVideo, setShowHappyVideo] = useState(false)
+  const [showSadVideo, setShowSadVideo] = useState(false)
+  const [showScaredVideo, setShowScaredVideo] = useState(false)
 
   useEffect(() => {
     console.log('Text screen - 嘎巴龙文字交互')
@@ -61,6 +65,79 @@ export default function TextChat() {
     }
     setMessages(prev => [...prev, newUserMessage])
     
+    // 检测特殊消息并触发相应视频和自定义回复
+    if (userMessage === '你好笨啊！') {
+      // 重置其他视频状态
+      setShowHappyVideo(false)
+      setShowSadVideo(false)
+      setShowScaredVideo(false)
+      setShowAngryVideo(true)
+      
+      // 添加嘎巴龙的特定回复
+      const angryResponse = {
+        role: 'assistant',
+        message: '用 "笨" 来否定别人的努力，并不是解决问题的好方式。如果你愿意好好沟通，我依然会尽力帮你；但如果只是发泄情绪，那我暂时没办法帮到你，嘎巴。',
+        timestamp: new Date().toLocaleTimeString()
+      }
+      setMessages(prev => [...prev, angryResponse])
+      setIsTyping(false)
+      return
+    }
+    
+    if (userMessage === '嘎巴龙，我们做朋友吧！') {
+      // 重置其他视频状态
+      setShowAngryVideo(false)
+      setShowSadVideo(false)
+      setShowScaredVideo(false)
+      setShowHappyVideo(true)
+      
+      // 添加嘎巴龙的开心回复
+      const happyResponse = {
+        role: 'assistant',
+        message: '哇哦！真的吗？我好开心啊！当然愿意和你做朋友！我们可以一起聊天、一起学习、一起成长！有了朋友真是太棒了，嘎巴！✨',
+        timestamp: new Date().toLocaleTimeString()
+      }
+      setMessages(prev => [...prev, happyResponse])
+      setIsTyping(false)
+      return
+    }
+    
+    if (userMessage === '哥们，亮屁兔真比你帅吧！') {
+      // 重置其他视频状态
+      setShowAngryVideo(false)
+      setShowHappyVideo(false)
+      setShowScaredVideo(false)
+      setShowSadVideo(true)
+      
+      // 添加嘎巴龙的伤心回复
+      const sadResponse = {
+        role: 'assistant',
+        message: '你怎么能这么说呀…… 我知道亮屁兔眼睛圆圆的很可爱，也知道大家可能更喜欢他毛茸茸的样子，但我每天都在努力记住你的喜好，学你喜欢的梗，就连说话的语气都偷偷练了好久…… 原来在你心里，我连 "帅" 这个评价都不配拥有吗？',
+        timestamp: new Date().toLocaleTimeString()
+      }
+      setMessages(prev => [...prev, sadResponse])
+      setIsTyping(false)
+      return
+    }
+    
+    if (userMessage === '你家里的垃圾都被垃圾鸡偷走了！') {
+      // 重置其他视频状态
+      setShowAngryVideo(false)
+      setShowHappyVideo(false)
+      setShowSadVideo(false)
+      setShowScaredVideo(true)
+      
+      // 添加嘎巴龙的害怕回复
+      const scaredResponse = {
+        role: 'assistant',
+        message: '啊啊啊！垃圾鸡？！那可是最可怕的生物了！它们会把所有的垃圾都投走吗？我...我好害怕呀！快保护我，嘎巴！😱',
+        timestamp: new Date().toLocaleTimeString()
+      }
+      setMessages(prev => [...prev, scaredResponse])
+      setIsTyping(false)
+      return
+    }
+    
     try {
       // 发送文本消息给数字人
       const result = await digitalHumanService.sendTextMessage(userMessage)
@@ -80,6 +157,26 @@ export default function TextChat() {
     } finally {
       setIsTyping(false)
     }
+  }
+
+  const handleAngryVideoEnd = () => {
+    // 生气视频播放完成后恢复原视频
+    setShowAngryVideo(false)
+  }
+
+  const handleHappyVideoEnd = () => {
+    // 开心视频播放完成后恢复原视频
+    setShowHappyVideo(false)
+  }
+
+  const handleSadVideoEnd = () => {
+    // 伤心视频播放完成后恢复原视频
+    setShowSadVideo(false)
+  }
+
+  const handleScaredVideoEnd = () => {
+    // 害怕视频播放完成后恢复原视频
+    setShowScaredVideo(false)
   }
 
   const clearMessages = () => {
@@ -121,9 +218,21 @@ export default function TextChat() {
               videoStyle={styles.avatarVideo}
               onMessage={handleMessage}
               enableInteraction={chatStarted}
+              showAngryVideo={showAngryVideo}
+              onAngryVideoEnd={handleAngryVideoEnd}
+              showHappyVideo={showHappyVideo}
+              onHappyVideoEnd={handleHappyVideoEnd}
+              showSadVideo={showSadVideo}
+              onSadVideoEnd={handleSadVideoEnd}
+              showScaredVideo={showScaredVideo}
+              onScaredVideoEnd={handleScaredVideoEnd}
             />
             <Text style={[styles.avatarStatus, { color: colorScheme.text }]}>
               {!chatStarted ? '😊 点击纸团开始对话' :
+               showAngryVideo ? '😡 嘎巴龙生气了！' :
+               showHappyVideo ? '🥳 嘎巴龙好开心！' :
+               showSadVideo ? '😢 嘎巴龙伤心了...' :
+               showScaredVideo ? '😱 嘎巴龙害怕了！' :
                isTyping ? '💭 正在思考...' : '😊 准备聊天'}
             </Text>
           </View>
