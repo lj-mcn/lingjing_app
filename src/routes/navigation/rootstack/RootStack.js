@@ -27,7 +27,7 @@ Notifications.setNotificationHandler({
 export default function RootStack() {
   const { userData } = useContext(UserDataContext)
   const {
-    videoWatched, musicSettingsCompleted, markVideoWatched, markMusicSettingsCompleted,
+    videoWatched, musicSettingsCompleted, musicEnabled, markVideoWatched, markMusicSettingsCompleted,
   } = useAppFlow()
   const isIos = Platform.OS === 'ios'
 
@@ -63,9 +63,9 @@ export default function RootStack() {
     return () => subscription.remove()
   }, [])
 
-  const handleMusicChoice = (choice) => {
-    console.log('Music choice:', choice)
-    markMusicSettingsCompleted()
+  const handleMusicChoice = (enableMusic) => {
+    console.log('Music choice:', enableMusic ? 'enabled' : 'muted')
+    markMusicSettingsCompleted(enableMusic)
   }
 
   return (
@@ -74,17 +74,20 @@ export default function RootStack() {
         headerShown: false,
       }}
     >
-      {!videoWatched ? (
-        <Stack.Screen
-          name="IntroVideo"
-          component={VideoPlayer}
-          initialParams={{ onVideoEnd: () => markVideoWatched() }}
-        />
-      ) : !musicSettingsCompleted ? (
+      {!musicSettingsCompleted ? (
         <Stack.Screen
           name="MusicSettings"
           component={MusicSettings}
           initialParams={{ onMusicChoice: handleMusicChoice }}
+        />
+      ) : !videoWatched ? (
+        <Stack.Screen
+          name="IntroVideo"
+          component={VideoPlayer}
+          initialParams={{ 
+            onVideoEnd: () => markVideoWatched(), 
+            musicEnabled: musicEnabled 
+          }}
         />
       ) : (
         <>
