@@ -45,6 +45,7 @@
     "global": "^4.4.0",
     "ignore-warnings": "^0.2.1",
     "lottie-react-native": "7.2.2",
+    "metro": "^0.82.5",
     "moment": "^2.24.0",
     "patch-package": "^6.4.7",
     "react": "19.0.0",

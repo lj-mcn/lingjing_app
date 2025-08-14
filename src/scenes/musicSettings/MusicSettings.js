@@ -1,6 +1,6 @@
 import React from 'react'
 import {
-  View, StyleSheet, Dimensions, TouchableOpacity, Text, ImageBackground,
+  View, StyleSheet, Dimensions, TouchableOpacity, ImageBackground, Image,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { useAppFlow } from '../../context/AppFlowContext'
@@ -20,6 +20,7 @@ export default function MusicSettings() {
     markMusicSettingsCompleted()
   }
 
+
   return (
     <View style={styles.container}>
       <StatusBar hidden />
@@ -30,17 +31,25 @@ export default function MusicSettings() {
       >
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.button, styles.muteButton]}
+            style={styles.imageButton}
             onPress={handleMuteChoice}
           >
-            <Text style={styles.buttonText}>先静音吧</Text>
+            <Image 
+              source={require('../../../assets/images/silent.png')} 
+              style={styles.buttonImage}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.okButton]}
+            style={styles.imageButton}
             onPress={handleOkChoice}
           >
-            <Text style={styles.buttonText}>知道咯</Text>
+            <Image 
+              source={require('../../../assets/images/iknow.png')} 
+              style={styles.buttonImage}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         </View>
       </ImageBackground>
@@ -67,28 +76,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '80%',
     paddingHorizontal: 16,
-    gap: -4,
+    gap: 20,
   },
-  button: {
-    paddingHorizontal: 25,
-    paddingVertical: 15,
-    borderRadius: 25,
-    width: '45%',
+  imageButton: {
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    justifyContent: 'center',
   },
-  muteButton: {
-    backgroundColor: '#CCCCCC',
-  },
-  okButton: {
-    backgroundColor: '#FF6B35',
+  buttonImage: {
+    width: 120,
+    height: 50,
   },
   buttonText: {
     color: 'white',
