@@ -1,10 +1,5 @@
-// 必须在最早导入弹窗拦截器
-import './utils/DisableAlerts'
-// 使用更安全的错误拦截器
-import './utils/SimpleErrorInterceptor'
-// 临时禁用运行时拦截器以修复应用崩溃问题
-// import './utils/RuntimeAlertBlocker'
-// import './utils/FinalSafetyNet'
+// 必须在最早导入统一弹窗拦截器
+import './utils/UnifiedAlertBlocker'
 
 import React, { useState, useEffect } from 'react'
 import { View } from 'react-native'

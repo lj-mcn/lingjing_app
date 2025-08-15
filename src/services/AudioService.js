@@ -11,6 +11,7 @@ class AudioService {
     this.isSimulationMode = false
     this.lastError = null
     this.statusCallbacks = []
+    this.interruptionCallbacks = [] // 立即打断回调
   }
 
   async initializeAudio() {
@@ -51,6 +52,9 @@ class AudioService {
         console.log('已经在录音中')
         return { success: false, error: '正在录音中，请先停止当前录音' }
       }
+
+      // 立即触发打断检查 - 录音开始的瞬间
+      this.triggerImmediateInterruptionCheck()
 
       if (this.isSimulationMode) {
         console.log('🎙️ 使用模拟录音模式')
@@ -130,10 +134,10 @@ class AudioService {
   async forceStopRecording() {
     try {
       console.log('🔄 强制停止录音')
-      
+
       // 强制重置状态
       this.isRecording = false
-      
+
       // 如果有录音对象，尝试停止
       if (this.recording) {
         try {
@@ -143,10 +147,10 @@ class AudioService {
         }
         this.recording = null
       }
-      
+
       // 重置录音URI
       this.recordingUri = null
-      
+
       console.log('✅ 录音状态已强制重置')
       return true
     } catch (error) {
@@ -323,6 +327,61 @@ class AudioService {
       hasPermission: !this.isSimulationMode,
       readyForRecording: !this.isRecording && !this.isPlaying,
       canPlayAudio: true,
+    }
+  }
+
+  // 立即触发打断检查
+  triggerImmediateInterruptionCheck() {
+    try {
+      // 通知所有注册的打断回调
+      this.interruptionCallbacks.forEach(callback => {
+        try {
+          callback()
+        } catch (error) {
+          console.error('打断回调执行错误:', error)
+        }
+      })
+
+      console.log('⚡ 立即打断检查已触发')
+    } catch (error) {
+      console.error('触发立即打断检查失败:', error)
+    }
+  }
+
+  // 添加打断回调
+  addInterruptionCallback(callback) {
+    if (typeof callback === 'function') {
+      this.interruptionCallbacks.push(callback)
+    }
+  }
+
+  // 移除打断回调
+  removeInterruptionCallback(callback) {
+    const index = this.interruptionCallbacks.indexOf(callback)
+    if (index > -1) {
+      this.interruptionCallbacks.splice(index, 1)
+    }
+  }
+
+  // 立即停止音频播放（非阻塞版本）
+  stopAudioImmediate() {
+    try {
+      // 立即设置状态
+      this.isPlaying = false
+      
+      // 非阻塞停止音频
+      if (this.sound) {
+        this.sound.stopAsync().catch(() => {})
+        this.sound.unloadAsync().catch(() => {})
+        this.sound = null
+      }
+      
+      console.log('⚡ 音频播放已立即停止')
+      return true
+    } catch (error) {
+      console.error('立即停止音频失败:', error)
+      this.isPlaying = false
+      return false
     }
   }
 }

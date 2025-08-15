@@ -29,7 +29,7 @@ const llmConfig = {
   // Response LLM配置 (使用我们自己的大模型)
   responseLLM: {
     // 远程大模型服务器配置 (从环境变量读取)
-    websocket_url: process.env.LLM_SERVER_URL || 'ws://192.168.18.138:8000',
+    websocket_url: process.env.LLM_SERVER_URL || 'ws://10.91.225.137:8000',
     timeout: 60000, // 增加超时时间以应对网络延迟
     model: 'Qwen2.5-1.5B-Instruct',
     max_tokens: 512,
@@ -40,9 +40,9 @@ const llmConfig = {
 
     // 备用服务器配置（可选）
     fallbackServers: [
-      process.env.LLM_SERVER_BACKUP_1 || 'ws://localhost:8000', // 备用1
-      process.env.LLM_SERVER_BACKUP_2 || 'ws://127.0.0.1:8000', // 备用2
-      'ws://10.91.225.137:8000', // 之前的IP作为备用
+      process.env.LLM_SERVER_BACKUP_1 || 'ws://192.168.18.138:8000', // 备用1：之前的IP
+      process.env.LLM_SERVER_BACKUP_2 || 'ws://localhost:8000', // 备用2：本地
+      'ws://127.0.0.1:8000', // 本地环回
       'ws://192.168.43.119:8000', // 同网段其他设备
     ],
   },

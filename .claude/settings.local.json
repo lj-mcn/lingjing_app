@@ -7,7 +7,13 @@
       "Bash(grep:*)",
       "Bash(npm run lint:*)",
       "Bash(npm start)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(chmod:*)",
+      "Bash(npx eslint:*)",
+      "Bash(rm:*)",
+      "Bash(git fetch:*)",
+      "Bash(git commit:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []

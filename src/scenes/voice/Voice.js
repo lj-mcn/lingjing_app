@@ -60,7 +60,6 @@ export default function Voice() {
     }
   }
 
-
   // 切换智能对话模式
   const toggleSmartConversationMode = async () => {
     if (smartConversationMode) {
@@ -100,7 +99,7 @@ export default function Voice() {
           setVadState('idle')
         }
       },
-      onMessage: handleMessage
+      onMessage: handleMessage,
     })
 
     // 清理函数，组件卸载时清理状态
@@ -170,7 +169,6 @@ export default function Voice() {
               </TouchableOpacity>
 
             </View>
-
 
             {/* 原有的单次录音按钮（在智能对话模式下隐藏） */}
             {!smartConversationMode && (

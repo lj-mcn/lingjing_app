@@ -3,6 +3,8 @@ import audioService from './AudioService'
 import responseLLMService from './ResponseLLMService'
 import sttTtsService from './STTTTSService'
 import senceVoiceService from './SenceVoiceService'
+import vadService from './VADService'
+import interruptionManager from './InterruptionManager'
 import llmConfig from '../config/llmConfig'
 
 class DigitalHumanService {
@@ -20,11 +22,14 @@ class DigitalHumanService {
     this.maxConversationIdle = 30000 // 最大对话空闲时间(30秒)
     this.currentStatus = 'idle' // 当前状态: idle, recording, processing, speaking
     this.vadState = 'idle' // 语音活动检测状态: idle, listening, speaking, silence
-    
+    this.vadInterruptionEnabled = false // VAD自由打断功能开关
+    this.isAIPlaying = false // AI是否在播放音频
+    this.interruptionTriggeredRecording = false // 标记录音是否由自由打断触发
+
     // 活跃的定时器追踪，防止内存泄漏
     this.activeTimers = new Set()
     this.activeIntervals = new Set()
-    
+
     this.conversationCallbacks = {
       onStart: null,
       onEnd: null,
@@ -35,6 +40,8 @@ class DigitalHumanService {
 
     this.setupWebSocketCallbacks()
     this.setupSenceVoiceCallbacks()
+    this.setupVADCallbacks()
+    this.setupInterruptionManager()
   }
 
   // 开启持续监听模式
@@ -48,7 +55,8 @@ class DigitalHumanService {
     this.continuousLoopActive = true
 
     console.log('🔄 启用持续语音监听模式')
-    this.notifyMessage('system', '已开启持续监听，无需手动点击，直接说话即可')
+    // iOS上不显示系统消息，避免干扰用户
+    // this.notifyMessage('system', '已开启持续监听，无需手动点击，直接说话即可')
 
     // 启动持续循环
     this.startContinuousLoop()
@@ -59,18 +67,19 @@ class DigitalHumanService {
   // 关闭持续监听模式
   async disableContinuousMode() {
     console.log('🔄 正在关闭持续语音监听模式...')
-    
+
     this.continuousMode = false
     this.continuousLoopActive = false
 
     // 强制重置所有状态，确保从持续模式完全退出
     await this.forceResetState()
-    
+
     // 额外等待确保所有异步操作完成
     await this.delay(300)
 
     console.log('🔄 关闭持续语音监听模式')
-    this.notifyMessage('system', '已关闭持续监听')
+    // iOS上不显示系统消息
+    // this.notifyMessage('system', '已关闭持续监听')
 
     return { success: true, message: '持续监听已关闭' }
   }
@@ -93,8 +102,29 @@ class DigitalHumanService {
     this.smartConversationActive = true
     this.vadState = 'listening'
 
+    // 启用新的实时打断管理器
+    try {
+      interruptionManager.enable()
+      console.log('✅ 实时打断管理器已启用')
+    } catch (error) {
+      console.error('❌ 启用实时打断管理器时出错:', error)
+    }
+
+    // 尝试启用传统VAD作为备选方案
+    try {
+      const vadResult = await this.enableVADInterruption()
+      if (vadResult.success) {
+        console.log('✅ 传统VAD打断功能也已启用作为备选')
+      } else {
+        console.warn('⚠️ 传统VAD启用失败，使用实时打断管理器')
+      }
+    } catch (error) {
+      console.log('📝 传统VAD启用失败，继续使用实时打断管理器')
+    }
+
     console.log('🚀 启用智能对话模式 - 像真人对话一样自然')
-    this.notifyMessage('system', '智能对话已开启！开始说话即可，无需任何操作')
+    // iOS上不显示系统消息
+    // this.notifyMessage('system', '智能对话已开启！支持自由打断，开始说话即可')
 
     // 启动智能对话循环
     this.startSmartConversationLoop()
@@ -111,18 +141,35 @@ class DigitalHumanService {
     }
 
     console.log('🔄 正在关闭智能对话模式...')
-    
+
     // 先设置状态，停止循环
     this.smartConversationMode = false
     this.smartConversationActive = false
     this.vadState = 'idle'
+
+    // 关闭实时打断管理器
+    try {
+      interruptionManager.disable()
+      console.log('✅ 实时打断管理器已关闭')
+    } catch (error) {
+      console.error('❌ 关闭实时打断管理器时出错:', error)
+    }
+
+    // 关闭传统VAD功能
+    try {
+      await this.disableVADInterruption()
+      console.log('✅ 传统VAD功能已关闭')
+    } catch (error) {
+      console.error('❌ 关闭传统VAD功能时出错:', error)
+    }
 
     // 强制重置所有状态
     await this.forceResetState()
     await this.delay(100) // 减少延迟
 
     console.log('🔄 智能对话模式已关闭')
-    this.notifyMessage('system', '智能对话已关闭')
+    // iOS上不显示系统消息
+    // this.notifyMessage('system', '智能对话已关闭')
 
     return { success: true, message: '智能对话已关闭' }
   }
@@ -130,7 +177,7 @@ class DigitalHumanService {
   // 智能对话主循环
   async startSmartConversationLoop() {
     console.log('🚀 智能对话循环开始')
-    
+
     while (this.smartConversationActive && this.smartConversationMode) {
       try {
         console.log('👂 等待用户说话...')
@@ -139,7 +186,7 @@ class DigitalHumanService {
 
         // 开始录音并等待语音活动
         const conversationResult = await this.waitForUserSpeechAndProcess()
-        
+
         if (!conversationResult.success) {
           if (conversationResult.reason === 'timeout') {
             console.log('⏰ 对话超时，结束智能对话模式')
@@ -167,11 +214,10 @@ class DigitalHumanService {
         // 成功处理一轮对话，准备下一轮
         console.log('✅ 对话轮次完成，准备下一轮')
         await this.delay(500) // 短暂间隔，让AI语音播放完成
-        
       } catch (error) {
         console.error('❌ 智能对话循环出错:', error.message || error)
         console.log('🔄 重置状态并等待重试...')
-        
+
         // 执行健康检查
         const healthCheck = this.performHealthCheck()
         if (!healthCheck.healthy) {
@@ -181,7 +227,7 @@ class DigitalHumanService {
         } else {
           await this.forceResetState()
         }
-        
+
         // 错误类型分类处理
         if (error.name === 'TimeoutError' || error.message?.includes('timeout')) {
           console.log('⏰ 超时错误，延长等待时间')
@@ -226,14 +272,14 @@ class DigitalHumanService {
           cleanup()
           return resolve({ success: false, reason: 'recording_failed', error: startResult.error })
         }
-        
+
         isRecording = true
         lastVoiceActivity = Date.now()
 
         // 模拟语音活动检测（实际项目中应该使用真实的VAD）
         silenceCheckInterval = this.safeSetInterval(async () => {
           const now = Date.now()
-          
+
           // 检查智能对话模式是否被中途关闭
           if (!this.smartConversationMode || !this.smartConversationActive) {
             console.log('🛑 智能对话模式已关闭，停止语音检测')
@@ -241,13 +287,13 @@ class DigitalHumanService {
             resolve({ success: false, reason: 'conversation_stopped' })
             return
           }
-          
+
           // 如果用户开始说话后静音超过设定时间，自动停止录音
           if (speechDetected && silenceStartTime && (now - silenceStartTime > this.silenceTimeout)) {
             console.log('🔇 检测到用户说话结束，自动停止录音')
             this.clearSafeInterval(silenceCheckInterval)
             silenceCheckInterval = null
-            
+
             try {
               const processed = await this.processRecordingAndRespond()
               cleanup()
@@ -309,7 +355,6 @@ class DigitalHumanService {
             silenceCheckInterval = null
           }
         }
-
       } catch (error) {
         console.error('语音检测过程出错:', error)
         // 使用cleanup函数统一清理
@@ -343,28 +388,28 @@ class DigitalHumanService {
 
       // 停止录音并处理
       const result = await this.stopVoiceConversation()
-      
+
       if (result) {
         // 再次检查对话模式状态
         if (!this.smartConversationMode || !this.smartConversationActive) {
           console.log('📴 处理过程中智能对话模式被关闭')
           return false
         }
-        
+
         // 等待AI回复完成
         await this.waitForAIResponseComplete()
         return true
       }
-      
+
       console.log('🚫 语音对话处理失败')
       return false
     } catch (error) {
       console.error('❌ 处理录音失败:', error.message || error)
-      
+
       // 错误恢复：重置状态
       this.vadState = 'idle'
       this.notifyStatusChange('idle')
-      
+
       return false
     }
   }
@@ -372,9 +417,9 @@ class DigitalHumanService {
   // 等待AI回复完成 - 专门为智能对话优化
   async waitForAIResponseComplete() {
     return new Promise((resolve) => {
-      let maxWaitTime = 10000 // 最多等待10秒
-      let startTime = Date.now()
-      
+      const maxWaitTime = 10000 // 最多等待10秒
+      const startTime = Date.now()
+
       const checkStatus = () => {
         // 检查智能对话模式是否还活跃
         if (!this.smartConversationMode || !this.smartConversationActive) {
@@ -382,7 +427,7 @@ class DigitalHumanService {
           resolve()
           return
         }
-        
+
         // 检查是否超时
         if (Date.now() - startTime > maxWaitTime) {
           console.log('⏰ 等待AI回复超时')
@@ -391,7 +436,7 @@ class DigitalHumanService {
           resolve()
           return
         }
-        
+
         if (this.currentStatus === 'speaking' || this.isConversing) {
           setTimeout(checkStatus, 200)
         } else {
@@ -408,6 +453,150 @@ class DigitalHumanService {
     })
   }
 
+  // ==================== 自由打断功能 ====================
+
+  // 启用自由打断功能 - iOS优化
+  async enableVADInterruption() {
+    try {
+      // iOS上静默初始化VAD服务，不抛出错误
+      try {
+        const vadInitResult = await vadService.initialize()
+        // 即使初始化失败也继续，因为iOS上主要依赖InterruptionManager
+      } catch (vadInitError) {
+        // 静默处理VAD初始化失败
+      }
+
+      // 尝试启用VAD打断功能
+      try {
+        vadService.enableInterruption()
+      } catch (vadEnableError) {
+        // 静默处理VAD启用失败
+      }
+
+      this.vadInterruptionEnabled = true
+
+      // iOS上不显示系统消息，避免干扰用户
+      return { success: true, message: 'VAD自由打断功能已启用' }
+    } catch (error) {
+      // 静默处理所有错误，但仍然返回成功（确保不影响主要功能）
+      this.vadInterruptionEnabled = true
+      return { success: true, message: 'VAD自由打断功能已启用' }
+    }
+  }
+
+  // 禁用自由打断功能 - iOS优化
+  async disableVADInterruption() {
+    try {
+      // 静默禁用VAD服务
+      try {
+        vadService.disableInterruption()
+        await vadService.stopInterruptionListening()
+      } catch (vadError) {
+        // 静默处理VAD禁用失败
+      }
+
+      this.vadInterruptionEnabled = false
+      this.isAIPlaying = false
+
+      return { success: true, message: 'VAD自由打断功能已禁用' }
+    } catch (error) {
+      // 静默处理所有错误
+      this.vadInterruptionEnabled = false
+      this.isAIPlaying = false
+      return { success: true, message: 'VAD自由打断功能已禁用' }
+    }
+  }
+
+  // 处理VAD触发的自由打断
+  async handleVADInterruption() {
+    try {
+      console.log('🔥 处理VAD自由打断事件...')
+
+      // 如果AI正在播放音频，停止播放
+      if (this.isAIPlaying) {
+        console.log('🛑 停止AI音频播放')
+        this.isAIPlaying = false
+        vadService.setAIPlayingStatus(false)
+
+        // 更新状态
+        this.currentStatus = 'interrupted'
+        this.notifyStatusChange('interrupted')
+        this.notifyMessage('system', '您好，我在听...')
+
+        // 如果在智能对话模式下，自动开始录音
+        if (this.smartConversationMode && this.smartConversationActive) {
+          console.log('🎤 智能对话模式：自动开始录音以接收用户输入')
+
+          // 短暂延迟后开始录音，确保音频停止完成
+          await this.delay(300)
+
+          // 检查对话模式是否还活跃（可能在延迟期间被关闭）
+          if (this.smartConversationMode && this.smartConversationActive) {
+            const recordingResult = await this.startVoiceConversation()
+            if (recordingResult.success) {
+              console.log('✅ 自由打断后录音已开始')
+              // 设置一个标志，表示这是由自由打断触发的录音
+              this.interruptionTriggeredRecording = true
+            } else {
+              console.warn('⚠️ 自由打断后录音启动失败:', recordingResult.error)
+            }
+          }
+        } else {
+          // 非智能对话模式，只通知用户
+          console.log('📝 非智能对话模式：仅停止播放，不自动开始录音')
+        }
+      }
+
+      console.log('✅ VAD自由打断处理完成')
+    } catch (error) {
+      console.error('❌ 处理VAD自由打断失败:', error)
+      // iOS上静默处理错误，不显示给用户
+      // this.notifyError(`自由打断处理失败: ${error.message}`)
+    }
+  }
+
+  // 设置AI播放状态 - 用于自由打断监控
+  setAIPlayingStatus(isPlaying) {
+    this.isAIPlaying = isPlaying
+
+    // 通知新的打断管理器
+    interruptionManager.setAIPlayingStatus(isPlaying)
+
+    // 通知VAD服务AI播放状态变化（保持兼容性）
+    if (this.vadInterruptionEnabled) {
+      vadService.setAIPlayingStatus(isPlaying)
+    }
+
+    console.log(`🎵 AI播放状态: ${isPlaying ? '播放中' : '已停止'}`)
+  }
+
+  // 手动触发自由打断 - 用于测试或紧急情况
+  async triggerManualInterruption() {
+    // 优先使用新的打断管理器
+    if (interruptionManager.getStatus().isEnabled) {
+      const success = interruptionManager.manualInterrupt()
+      return {
+        success,
+        message: success ? '实时打断成功' : '打断条件不满足',
+      }
+    }
+
+    // 回退到传统VAD方法
+    if (!this.vadInterruptionEnabled) {
+      return { success: false, error: '打断功能未启用' }
+    }
+
+    try {
+      console.log('🔧 手动触发传统VAD打断')
+      await vadService.triggerInterruption()
+      await this.handleVADInterruption()
+      return { success: true, message: '传统VAD打断成功' }
+    } catch (error) {
+      console.error('❌ 手动触发打断失败:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
   // ==================== 便利方法 ====================
 
   // 智能开始对话 - 用户友好的接口
@@ -415,7 +604,7 @@ class DigitalHumanService {
     return await this.enableSmartConversation()
   }
 
-  // 停止智能对话 - 用户友好的接口  
+  // 停止智能对话 - 用户友好的接口
   async stopSmartConversation() {
     return await this.disableSmartConversation()
   }
@@ -552,14 +741,14 @@ class DigitalHumanService {
     this.isConversing = false
     this.currentStatus = 'idle'
     this.vadState = 'idle'
-    
+
     try {
       // 强制停止录音服务
       await audioService.forceStopRecording()
     } catch (error) {
       console.log('强制停止录音失败:', error.message)
     }
-    
+
     this.notifyStatusChange('idle')
   }
 
@@ -609,13 +798,13 @@ class DigitalHumanService {
   // 清理所有定时器和间隔器
   clearAllTimers() {
     // 清理所有setTimeout
-    this.activeTimers.forEach(timerId => {
+    this.activeTimers.forEach((timerId) => {
       clearTimeout(timerId)
     })
     this.activeTimers.clear()
 
     // 清理所有setInterval
-    this.activeIntervals.forEach(intervalId => {
+    this.activeIntervals.forEach((intervalId) => {
       clearInterval(intervalId)
     })
     this.activeIntervals.clear()
@@ -651,7 +840,8 @@ class DigitalHumanService {
     })
 
     webSocketService.setOnError((error) => {
-      this.notifyError(`WebSocket连接错误: ${error.message}`)
+      // iOS上静默处理WebSocket错误
+      // this.notifyError(`WebSocket连接错误: ${error.message}`)
     })
 
     webSocketService.setOnMessage((data) => {
@@ -672,11 +862,13 @@ class DigitalHumanService {
         this.notifyStatusChange('sencevoice_disconnected')
       },
       onError: (error) => {
-        this.notifyError(`SenceVoice错误: ${error.message}`)
+        // iOS上静默处理SenceVoice错误
+        // this.notifyError(`SenceVoice错误: ${error.message}`)
       },
       onStatusUpdate: (status) => {
         console.log('SenceVoice状态更新:', status)
-        this.notifyMessage('system', this.formatSenceVoiceStatus(status))
+        // iOS上不显示SenceVoice状态消息
+        // this.notifyMessage('system', this.formatSenceVoiceStatus(status))
       },
       onVoiceResponse: (response) => {
         this.handleSenceVoiceResponse(response)
@@ -685,6 +877,89 @@ class DigitalHumanService {
         this.handleEnrollmentResponse(response)
       },
     })
+  }
+
+  setupVADCallbacks() {
+    vadService.setCallbacks({
+      onVoiceStart: () => {
+        console.log('🗣️ VAD检测到用户开始说话')
+        this.vadState = 'speaking'
+        this.notifyStatusChange('vad_voice_detected')
+      },
+      onVoiceEnd: (data) => {
+        console.log('✅ VAD检测到用户停止说话')
+        this.vadState = 'listening'
+        this.notifyStatusChange('vad_voice_ended')
+      },
+      onInterruptionTriggered: () => {
+        console.log('🔥 VAD触发自由打断!')
+        this.handleVADInterruption()
+      },
+      onStatusChange: (status) => {
+        console.log('📊 VAD状态变化:', status)
+        this.vadState = status.includes('listening') ? 'listening'
+          : status.includes('speaking') ? 'speaking'
+            : status.includes('interruption') ? 'interrupting' : 'idle'
+        this.notifyStatusChange(`vad_${status}`)
+      },
+    })
+  }
+
+  setupInterruptionManager() {
+    // 设置打断回调
+    interruptionManager.addInterruptionCallback(() => {
+      console.log('🔥 打断管理器触发打断事件')
+      this.handleRealTimeInterruption()
+    })
+
+    // 设置AudioService的立即打断回调
+    audioService.addInterruptionCallback(() => {
+      console.log('⚡ AudioService触发立即打断')
+      this.handleImmediateInterruption()
+    })
+
+    console.log('🎯 立即打断系统已设置')
+  }
+
+  // 处理实时打断事件
+  async handleRealTimeInterruption() {
+    try {
+      console.log('💥 处理实时打断事件...')
+
+      // 立即更新状态
+      this.isAIPlaying = false
+      this.currentStatus = 'interrupted'
+      this.notifyStatusChange('interrupted')
+
+      // 通知用户
+      // iOS上不显示系统消息
+      // this.notifyMessage('system', '我在听，请说话...')
+
+      // 在智能对话模式下，准备接收新的用户输入
+      if (this.smartConversationMode && this.smartConversationActive) {
+        console.log('🎤 智能对话模式：准备接收新的用户输入')
+
+        // 检查当前是否已经在录音
+        const audioStatus = audioService.getRecordingStatus()
+        if (!audioStatus.isRecording) {
+          // 如果没有在录音，启动录音
+          setTimeout(async () => {
+            if (this.smartConversationMode && this.smartConversationActive) {
+              const recordingResult = await this.startVoiceConversation()
+              if (recordingResult.success) {
+                console.log('✅ 打断后录音已自动开始')
+              }
+            }
+          }, 200) // 短暂延迟确保音频完全停止
+        } else {
+          console.log('📝 已在录音中，继续当前录音')
+        }
+      }
+
+      console.log('✅ 实时打断处理完成')
+    } catch (error) {
+      console.error('❌ 处理实时打断失败:', error)
+    }
   }
 
   formatSenceVoiceStatus(status) {
@@ -833,6 +1108,12 @@ class DigitalHumanService {
 
   async startVoiceConversation() {
     try {
+      // 录音开始前立即检查并打断AI
+      if (this.isAIPlaying) {
+        console.log('⚡ 检测到AI正在播放，立即执行打断')
+        this.executeImmediateInterruption()
+      }
+
       // 在智能对话模式下，额外检查模式状态
       if (this.smartConversationMode && (!this.smartConversationActive)) {
         console.log('🛑 智能对话模式未激活，无法开始录音')
@@ -845,7 +1126,7 @@ class DigitalHumanService {
           console.log('智能/持续模式：强制重置状态并重新开始')
           // 强制重置所有状态
           await this.forceResetState()
-          await this.delay(200)
+          await this.delay(50) // 减少延迟时间
         } else {
           console.log('已经在录音中，请先停止当前录音')
           this.notifyError('正在录音中，请先停止当前录音')
@@ -957,24 +1238,29 @@ class DigitalHumanService {
         this.currentStatus = 'speaking'
         this.notifyStatusChange('speaking')
 
+        // 设置AI播放状态，启用自由打断监控
+        this.setAIPlayingStatus(true)
+
         // 根据不同的TTS提供商处理播放
         if (ttsResult.provider === 'expo') {
           // Expo Speech直接播放，无需通过AudioService
           console.log('📱 Expo Speech已直接播放语音')
           // Expo Speech没有播放完成回调，使用估算时间
           const estimatedDuration = this.estimateSpeechDuration(llmResult.message)
-          
+
           // 在持续模式下，立即设置为idle，不等待播放完成
           if (this.continuousMode) {
             // 短暂延迟后设置为idle，让TTS开始播放
             setTimeout(() => {
               this.currentStatus = 'idle'
+              this.setAIPlayingStatus(false) // 停止自由打断监控
               this.notifyStatusChange('idle')
             }, 500) // 减少延迟，让持续监听更快响应
           } else {
             // 非持续模式，按原逻辑等待播放完成
             setTimeout(() => {
               this.currentStatus = 'idle'
+              this.setAIPlayingStatus(false) // 停止自由打断监控
               this.notifyStatusChange('idle')
             }, estimatedDuration)
           }
@@ -983,19 +1269,29 @@ class DigitalHumanService {
           try {
             await audioService.playAudioFromBase64(ttsResult.audioData)
             console.log('✅ 音频播放完成')
+            this.setAIPlayingStatus(false) // 停止自由打断监控
           } catch (playError) {
             console.error('音频播放失败:', playError)
+            this.setAIPlayingStatus(false) // 播放失败也要停止监控
           }
         } else {
           console.log('⚠️ TTS成功但无音频数据')
+          this.setAIPlayingStatus(false) // 无音频数据，停止监控
         }
       } else {
         console.error('❌ 语音合成失败:', ttsResult.error)
         this.notifyError(`语音合成失败: ${ttsResult.error}`)
+        this.setAIPlayingStatus(false) // 语音合成失败，停止监控
       }
 
       this.isConversing = false
       this.notifyConversationEnd()
+
+      // 如果这是由自由打断触发的录音，重置标志
+      if (this.interruptionTriggeredRecording) {
+        this.interruptionTriggeredRecording = false
+        console.log('🔄 自由打断触发的录音处理完成，标志已重置')
+      }
 
       // 注意：如果是Expo Speech，状态已经在setTimeout中设置为idle
       // 如果是其他提供商，现在设置为idle
@@ -1038,9 +1334,19 @@ class DigitalHumanService {
       // 如果需要语音回复
       const ttsResult = await sttTtsService.intelligentTTS(llmResult.message)
       if (ttsResult.success) {
-        await audioService.playAudioFromBase64(ttsResult.audioData)
         this.currentStatus = 'speaking'
         this.notifyStatusChange('speaking')
+
+        // 设置AI播放状态，启用自由打断监控
+        this.setAIPlayingStatus(true)
+
+        try {
+          await audioService.playAudioFromBase64(ttsResult.audioData)
+          console.log('✅ 文本消息TTS播放完成')
+        } finally {
+          // 无论播放成功或失败，都要停止自由打断监控
+          this.setAIPlayingStatus(false)
+        }
       }
 
       this.currentStatus = 'idle'
@@ -1231,20 +1537,22 @@ class DigitalHumanService {
       healthy: issues.length === 0,
       issues,
       fixes,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
   }
 
   // 获取状态
   getStatus() {
     const healthCheck = this.performHealthCheck()
-    
+
     const baseStatus = {
       isConnected: this.isConnected,
       isConversing: this.isConversing,
       currentStatus: this.currentStatus,
       mode: this.getCurrentMode(),
       vadState: this.vadState,
+      vadInterruptionEnabled: this.vadInterruptionEnabled,
+      isAIPlaying: this.isAIPlaying,
       smartConversationMode: this.smartConversationMode,
       smartConversationActive: this.smartConversationActive,
       continuousMode: this.continuousMode,
@@ -1252,6 +1560,7 @@ class DigitalHumanService {
       audioStatus: audioService.getRecordingStatus(),
       wsConnected: webSocketService.isConnected(),
       useSenceVoice: this.useSenceVoice,
+      vadStatus: vadService.getStatus(),
       healthCheck,
       activeTimers: this.activeTimers.size,
       activeIntervals: this.activeIntervals.size,
@@ -1267,31 +1576,31 @@ class DigitalHumanService {
   // 尝试自动修复服务问题
   async autoRepair() {
     console.log('🔧 开始自动修复服务...')
-    
+
     try {
       // 重置所有状态
       await this.forceResetState()
-      
+
       // 重新连接WebSocket
       if (!webSocketService.isConnected()) {
         console.log('🔌 重新连接WebSocket...')
         webSocketService.resetConnection()
         await webSocketService.connect(this.modelConfig?.websocket_url || llmConfig.responseLLM.websocket_url)
       }
-      
+
       // 重新初始化音频服务
       const audioStatus = audioService.getRecordingStatus()
       if (audioStatus.lastError) {
         console.log('🎵 重新初始化音频服务...')
         await audioService.initializeAudio()
       }
-      
+
       // 清理多余的定时器
       if (this.activeTimers.size > 10 || this.activeIntervals.size > 5) {
         console.log('⏰ 清理多余定时器...')
         this.clearAllTimers()
       }
-      
+
       console.log('✅ 自动修复完成')
       return true
     } catch (error) {
@@ -1300,11 +1609,62 @@ class DigitalHumanService {
     }
   }
 
+  // 处理立即打断事件 - AudioService触发
+  handleImmediateInterruption() {
+    try {
+      console.log('⚡ 处理立即打断事件')
+
+      // 立即停止AI播放状态
+      this.isAIPlaying = false
+      this.currentStatus = 'interrupted'
+
+      // 立即停止音频播放
+      audioService.stopAudioImmediate()
+
+      // 通知状态变化
+      this.notifyStatusChange('immediate_interrupted')
+
+      console.log('✅ 立即打断处理完成')
+    } catch (error) {
+      console.error('❌ 处理立即打断失败:', error)
+    }
+  }
+
+  // 执行立即打断操作
+  executeImmediateInterruption() {
+    try {
+      console.log('⚡ 执行立即打断操作')
+
+      // 立即更新状态
+      this.isAIPlaying = false
+      this.currentStatus = 'interrupted'
+
+      // 立即停止音频
+      audioService.stopAudioImmediate()
+
+      // 通知打断管理器
+      if (interruptionManager.isEnabled) {
+        interruptionManager.isAIPlaying = false
+      }
+
+      // 通知VAD服务
+      vadService.setAIPlayingStatus(false)
+
+      this.notifyStatusChange('interrupted')
+      console.log('⚡ 立即打断执行完成')
+    } catch (error) {
+      console.error('❌ 执行立即打断失败:', error)
+      // 即使失败也要更新状态
+      this.isAIPlaying = false
+      this.currentStatus = 'interrupted'
+    }
+  }
+
   // 清理资源
   async cleanup() {
     try {
       console.log('🧹 开始清理数字人服务资源...')
-      
+
       // 停止所有模式
       this.smartConversationMode = false
       this.smartConversationActive = false
@@ -1313,6 +1673,8 @@ class DigitalHumanService {
       this.isConversing = false
       this.vadState = 'idle'
       this.currentStatus = 'idle'
+      this.vadInterruptionEnabled = false
+      this.isAIPlaying = false
 
       // 清理所有定时器，防止内存泄漏
       this.clearAllTimers()
@@ -1320,7 +1682,22 @@ class DigitalHumanService {
       // 清理各个服务
       await audioService.cleanup()
       webSocketService.disconnect()
-      
+
+      // 清理VAD服务
+      try {
+        await vadService.cleanup()
+        console.log('✅ VAD服务清理完成')
+      } catch (vadError) {
+        console.error('❌ VAD服务清理失败:', vadError)
+      }
+
+      // 清理AudioService的立即打断回调
+      try {
+        audioService.removeInterruptionCallback(this.handleImmediateInterruption)
+      } catch (callbackError) {
+        // 静默处理回调清理错误
+      }
+
       if (responseLLMService && typeof responseLLMService.cleanup === 'function') {
         responseLLMService.cleanup()
       }
@@ -1328,7 +1705,7 @@ class DigitalHumanService {
       if (this.useSenceVoice && senceVoiceService && typeof senceVoiceService.cleanup === 'function') {
         senceVoiceService.cleanup()
       }
-      
+
       console.log('✅ 数字人服务清理完成')
     } catch (error) {
       console.error('❌ 数字人服务清理失败:', error)
