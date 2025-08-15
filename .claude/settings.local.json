@@ -7,7 +7,9 @@
       "Bash(grep:*)",
       "Bash(npm run lint:*)",
       "Bash(npm start)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
