@@ -7,24 +7,24 @@ const senceVoiceConfig = {
   servers: [
     {
       url: 'ws://10.91.225.137:8000',
-      name: '远程SenceVoice服务器',
+      name: '主要SenceVoice服务器',
       priority: 1,
       enabled: true,
       description: '主要服务器',
     },
     {
-      url: 'ws://192.168.18.138:8000',
+      url: 'ws://10.91.225.137:8000',
       name: '备用SenceVoice服务器',
       priority: 2,
       enabled: true,
       description: '备用服务器',
     },
     {
-      url: 'ws://localhost:8000',
+      url: 'ws://10.91.225.137:8000',
       name: '本地SenceVoice服务器',
       priority: 3,
       enabled: true,
-      description: '本地开发服务器',
+      description: '统一服务器',
     },
   ],
 

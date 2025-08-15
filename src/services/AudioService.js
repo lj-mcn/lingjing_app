@@ -65,8 +65,46 @@ class AudioService {
       }
 
       console.log('🎙️ 开始真实录音...')
+      
+      // iOS权限和音频模式设置
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          playThroughEarpieceAndroid: false,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+        })
+        console.log('🔧 iOS音频模式已设置')
+      } catch (modeError) {
+        console.warn('⚠️ 音频模式设置失败:', modeError.message)
+      }
+
       const recording = new Audio.Recording()
-      await recording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY)
+      
+      // 自定义录音选项，强制使用WAV格式以支持STT服务
+      const recordingOptions = {
+        android: {
+          extension: '.wav',
+          outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_DEFAULT,
+          audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_DEFAULT,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 128000,
+        },
+        ios: {
+          extension: '.wav',
+          audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_HIGH,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 128000,
+          linearPCMBitDepth: 16,
+          linearPCMIsBigEndian: false,
+          linearPCMIsFloat: false,
+        },
+      }
+      
+      await recording.prepareToRecordAsync(recordingOptions)
 
       this.recording = recording
       await this.recording.startAsync()

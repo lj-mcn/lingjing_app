@@ -43,7 +43,7 @@ class SenceVoiceService {
   /**
    * 连接到SenceVoice WebSocket服务器
    */
-  async connect(url = 'ws://localhost:8000') {
+  async connect(url = 'ws://10.91.225.137:8000') {
     if (this.isConnecting || this.isConnected) {
       console.log('SenceVoice服务已连接或正在连接中')
       return true
@@ -151,7 +151,35 @@ class SenceVoiceService {
       const { resolve, reject } = this.pendingRequests.get(requestId)
       this.pendingRequests.delete(requestId)
 
-      if (data.success !== false) {
+      console.log('🔍 处理请求响应:', {
+        requestId,
+        type: data.type,
+        success: data.success,
+        hasData: !!data.data,
+        dataKeys: data.data ? Object.keys(data.data) : null
+      })
+
+      // 对于llm_response类型，我们需要特殊处理
+      if (data.type === 'llm_response') {
+        // 处理LLM响应，自动进行TTS
+        this.handleLLMResponse(data).then(() => {
+          resolve({
+            success: true,
+            type: data.type,
+            data: data.data || data,
+            requestId: data.requestId
+          })
+        }).catch((error) => {
+          console.error('处理LLM响应失败:', error)
+          resolve({
+            success: true,
+            type: data.type,
+            data: data.data || data,
+            requestId: data.requestId,
+            ttsError: error.message
+          })
+        })
+      } else if (data.success !== false) {
         resolve(data)
       } else {
         reject(new Error(data.error || '请求失败'))
@@ -169,8 +197,18 @@ class SenceVoiceService {
         this.handleVoiceResponse(data)
         break
 
+      case 'llm_response':
+        // 处理LLM响应 - 服务器可能发送llm_response而不是voice_response
+        console.log('📤 处理LLM响应:', data)
+        this.handleVoiceResponse(data)
+        break
+
       case 'sv_enroll_response':
         this.handleEnrollmentResponse(data)
+        break
+
+      case 'tts_response':
+        this.handleTTSResponse(data)
         break
 
       case 'pong':
@@ -185,7 +223,7 @@ class SenceVoiceService {
         break
 
       default:
-        console.log('未处理的消息类型:', type)
+        console.log('未处理的消息类型:', type, data)
     }
   }
 
@@ -198,6 +236,62 @@ class SenceVoiceService {
 
     if (this.callbacks.onStatusUpdate) {
       this.callbacks.onStatusUpdate(this.serverStatus)
+    }
+  }
+
+  /**
+   * 处理LLM响应
+   */
+  async handleLLMResponse(data) {
+    try {
+      console.log('🤖 处理LLM响应:', data)
+      
+      // 提取LLM回复文本
+      let responseText = ''
+      if (data.message) {
+        responseText = data.message
+      } else if (data.data && data.data.message) {
+        responseText = data.data.message
+      } else if (data.data && typeof data.data === 'string') {
+        responseText = data.data
+      }
+      
+      if (!responseText) {
+        console.log('⚠️ LLM响应中没有找到文本内容')
+        return
+      }
+      
+      console.log('✅ LLM回复:', responseText)
+      
+      // 第3步：使用TTS将回复转为语音并播放
+      const STTTTSService = require('./STTTTSService').default
+      console.log('🔊 使用TTS生成语音回复...')
+      const ttsResult = await STTTTSService.intelligentTTS(responseText)
+      
+      if (ttsResult.success) {
+        console.log('✅ TTS生成成功，开始播放')
+        // TTS服务通常会直接播放音频，或者返回音频数据
+        if (ttsResult.audioData) {
+          await this.playTTSAudio(ttsResult.audioData)
+        }
+      } else {
+        console.error('❌ TTS生成失败:', ttsResult.error)
+      }
+      
+      // 触发语音响应回调
+      if (this.callbacks.onVoiceResponse) {
+        this.callbacks.onVoiceResponse({
+          success: true,
+          asr_result: '(语音识别结果)',
+          llm_response: responseText,
+          audio_response: ttsResult.audioData || null,
+          response_type: 'voice_chat_success'
+        })
+      }
+      
+    } catch (error) {
+      console.error('处理LLM响应失败:', error)
+      throw error
     }
   }
 
@@ -238,6 +332,20 @@ class SenceVoiceService {
   }
 
   /**
+   * 处理TTS响应
+   */
+  handleTTSResponse(data) {
+    console.log('🔊 TTS响应:', data.requestId)
+
+    // TTS响应通过Promise机制处理，这里只是记录日志
+    if (data.success && data.data.audio_data) {
+      console.log('✅ TTS合成成功')
+    } else {
+      console.log('❌ TTS合成失败:', data.error)
+    }
+  }
+
+  /**
    * 发送消息到服务器
    */
   sendMessage(message) {
@@ -263,20 +371,34 @@ class SenceVoiceService {
    */
   async sendVoiceRequest(audioUri, options = {}) {
     try {
-      // 读取音频文件
-      const audioData = await this.prepareAudioData(audioUri)
+      console.log('🎤 开始处理语音对话请求')
+      
+      // 第1步：使用STT将音频转为文本
+      const STTTTSService = require('./STTTTSService').default
+      console.log('📝 使用STT识别语音内容...')
+      const sttResult = await STTTTSService.intelligentSTT(audioUri)
+      
+      if (!sttResult.success) {
+        throw new Error(`语音识别失败: ${sttResult.error}`)
+      }
+      
+      const userText = sttResult.text
+      console.log('✅ 语音识别成功:', userText)
+      
+      // 第2步：发送文本给LLM服务器获取回复
+      console.log('🤖 发送文本给LLM服务器...')
       const requestId = this.generateRequestId('voice')
-
+      
       const message = {
-        type: 'voice_request',
+        type: 'llm_request',
         requestId,
         timestamp: Date.now(),
         data: {
-          audio_data: audioData,
-          audio_format: options.format || 'wav',
-          sample_rate: options.sampleRate || 16000,
-          channels: options.channels || 1,
-          bit_depth: options.bitDepth || 16,
+          prompt: userText,
+          system_prompt: '你是嘎巴龙，一个可爱友好的数字人助手。请用简洁明了的中文回复，保持活泼可爱的语气。',
+          conversation_history: [],
+          max_tokens: 512,
+          temperature: 0.7
         },
       }
 
@@ -287,7 +409,7 @@ class SenceVoiceService {
         setTimeout(() => {
           if (this.pendingRequests.has(requestId)) {
             this.pendingRequests.delete(requestId)
-            reject(new Error('语音请求超时'))
+            reject(new Error('LLM请求超时'))
           }
         }, 30000) // 30秒超时
 
@@ -336,6 +458,46 @@ class SenceVoiceService {
       })
     } catch (error) {
       console.error('发送声纹注册请求失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 发送TTS请求
+   */
+  async sendTTSRequest(text, options = {}) {
+    try {
+      const requestId = this.generateRequestId('tts')
+
+      const message = {
+        type: 'tts_request',
+        requestId,
+        timestamp: Date.now(),
+        data: {
+          text: text,
+          voice: options.voice || 'zh-CN-XiaoyiNeural',
+          rate: options.rate || '0%',
+          pitch: options.pitch || '+0Hz',
+          volume: options.volume || '+0%',
+          format: options.format || 'mp3',
+        },
+      }
+
+      return new Promise((resolve, reject) => {
+        this.pendingRequests.set(requestId, { resolve, reject })
+
+        // 设置超时
+        setTimeout(() => {
+          if (this.pendingRequests.has(requestId)) {
+            this.pendingRequests.delete(requestId)
+            reject(new Error('TTS请求超时'))
+          }
+        }, 30000) // 30秒超时
+
+        this.sendMessage(message)
+      })
+    } catch (error) {
+      console.error('发送TTS请求失败:', error)
       throw error
     }
   }

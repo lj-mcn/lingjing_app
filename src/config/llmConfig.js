@@ -40,11 +40,21 @@ const llmConfig = {
 
     // 备用服务器配置（可选）
     fallbackServers: [
-      process.env.LLM_SERVER_BACKUP_1 || 'ws://192.168.18.138:8000', // 备用1：之前的IP
-      process.env.LLM_SERVER_BACKUP_2 || 'ws://localhost:8000', // 备用2：本地
-      'ws://127.0.0.1:8000', // 本地环回
-      'ws://192.168.43.119:8000', // 同网段其他设备
+      process.env.LLM_SERVER_BACKUP_1 || 'ws://10.91.225.137:8000', // 备用1
+      process.env.LLM_SERVER_BACKUP_2 || 'ws://10.91.225.137:8000', // 备用2
+      'ws://10.91.225.137:8000', // 统一IP
+      'ws://10.91.225.137:8000', // 统一IP
     ],
+  },
+
+  // SenseVoice配置 (语音识别和语音合成)
+  senseVoice: {
+    // SenseVoice服务器URL (使用与LLM相同的服务器)
+    websocket_url: process.env.SENSEVOICE_SERVER_URL || 'ws://10.91.225.137:8000',
+    timeout: 60000,
+    reconnectAttempts: 3,
+    reconnectDelay: 3000,
+    enabled: true, // 启用SenseVoice服务
   },
 
   // 嘎巴龙数字人个性配置
@@ -163,8 +173,35 @@ const llmConfig = {
 
   // STT/TTS服务配置
   sttTts: {
-    // 服务提供商选择: auto, openai, azure, expo, web, simulation
-    provider: 'auto', // 自动选择：Google STT + Expo TTS
+    // 服务提供商选择: auto, sensevoice, edge-tts, openai, azure, expo, web, simulation
+    provider: 'auto', // 自动选择：SenseVoice STT + Edge TTS
+
+    // SenseVoice配置（语音识别）
+    sensevoice: {
+      model: 'sensevoice-small', // SenseVoice-small模型
+      language: 'auto', // 语言自动检测 zn, en, yue, ja, ko, nospeech
+      use_itn: false, // 是否使用反向文本归一化
+      enabled: true,
+    },
+
+    // Edge TTS配置（语音合成）
+    edgeTts: {
+      voice: 'zh-CN-XiaoyiNeural', // 默认中文女声
+      rate: '0%', // 语速 (-100% 到 +200%)
+      pitch: '+0Hz', // 音调 (-50Hz 到 +50Hz)
+      volume: '+0%', // 音量 (-100% 到 +100%)
+      language: 'zh-CN',
+      enabled: true,
+      // 可用语音列表
+      voices: {
+        'zh-CN-XiaoyiNeural': '中文女声-小艺',
+        'zh-CN-YunxiNeural': '中文男声-云希',
+        'zh-CN-XiaoxiaoNeural': '中文女声-晓晓',
+        'zh-CN-YunyangNeural': '中文男声-云扬',
+        'en-US-AnaNeural': '英文女声-安娜',
+        'en-US-AriaNeural': '英文女声-艾瑞亚',
+      },
+    },
 
     // OpenAI配置
     openai: {

@@ -44,6 +44,8 @@ class STTTTSService {
 
     // 服务可用性状态
     this.serviceAvailability = {
+      sensevoice: true, // SenseVoice-small语音识别
+      'edge-tts': true, // Edge TTS语音合成
       expo: true, // Expo支持TTS，STT需要检测
       expoSTT: !!SpeechRecognition, // Expo STT可用性
       web: Platform.OS === 'web',
@@ -113,8 +115,8 @@ class STTTTSService {
     console.log('当前服务可用性:', this.serviceAvailability)
 
     if (type === 'stt') {
-      // STT优先级: Google > OpenAI > Azure > ExpoSTT > Web > 模拟
-      const sttPriorities = ['google', 'openai', 'azure', 'expoSTT', 'web']
+      // STT优先级: Google > OpenAI > Azure > Expo > Web > 模拟 (Google支持WAV格式，准确率更高)
+      const sttPriorities = ['google', 'openai', 'azure', 'expo', 'web']
       for (const provider of sttPriorities) {
         console.log(`检查 ${provider}: ${this.serviceAvailability[provider]}`)
         if (this.serviceAvailability[provider]) {
@@ -124,7 +126,7 @@ class STTTTSService {
         }
       }
     } else if (type === 'tts') {
-      // TTS优先级: Expo > Google > OpenAI > Azure > Web > 模拟
+      // TTS优先级: Expo > Google > OpenAI > Azure > Web > 模拟 (暂时禁用Edge TTS避免循环依赖)
       const ttsPriorities = ['expo', 'google', 'openai', 'azure', 'web']
       for (const provider of ttsPriorities) {
         if (this.serviceAvailability[provider]) {
@@ -132,8 +134,8 @@ class STTTTSService {
         }
       }
     } else {
-      // 综合优先级: Google > OpenAI > Azure > Expo(如果有STT) > Web > 模拟
-      const priorities = ['google', 'openai', 'azure', 'expo', 'web']
+      // 综合优先级: SenseVoice&EdgeTTS > Google > OpenAI > Azure > Expo(如果有STT) > Web > 模拟
+      const priorities = ['sensevoice', 'edge-tts', 'google', 'openai', 'azure', 'expo', 'web']
       for (const provider of priorities) {
         if (this.serviceAvailability[provider]) {
           // 如果选择expo，需要确保至少有TTS或STT可用
@@ -159,6 +161,12 @@ class STTTTSService {
 
       if (!audioUri) {
         throw new Error('音频文件路径为空')
+      }
+
+      // 检查是否为模拟录音
+      if (audioUri && audioUri.startsWith('mock://')) {
+        console.log('🎭 检测到模拟录音，使用模拟STT响应')
+        return await this.mockSpeechToText(audioUri)
       }
 
       const formData = new FormData()
@@ -476,15 +484,81 @@ class STTTTSService {
     return configGuides[Math.floor(Math.random() * configGuides.length)]
   }
 
+  // SenseVoice-small语音识别
+  async senseVoiceSpeechToText(audioUri) {
+    try {
+      console.log('🤖 使用SenseVoice-small语音识别')
+
+      // 检查是否为模拟录音
+      if (audioUri && audioUri.startsWith('mock://')) {
+        console.log('🎭 检测到模拟录音，使用模拟STT响应')
+        return await this.mockSpeechToText(audioUri)
+      }
+
+      // 调用SenceVoiceService的WebSocket接口
+      const senceVoiceService = require('./SenceVoiceService').default
+      
+      if (!senceVoiceService.isConnected) {
+        throw new Error('SenseVoice服务未连接')
+      }
+
+      const result = await senceVoiceService.sendVoiceRequest(audioUri, {
+        format: 'wav',
+        sampleRate: 16000,
+        channels: 1,
+        bitDepth: 16,
+      })
+
+      // 处理不同的响应格式
+      if (result.success) {
+        let transcriptionText = null
+        
+        // 尝试多种可能的响应格式
+        if (result.data) {
+          if (result.data.asr_result) {
+            transcriptionText = result.data.asr_result
+          } else if (result.data.transcription) {
+            transcriptionText = result.data.transcription
+          } else if (result.data.text) {
+            transcriptionText = result.data.text
+          } else if (typeof result.data === 'string') {
+            transcriptionText = result.data
+          }
+        } else if (result.asr_result) {
+          transcriptionText = result.asr_result
+        } else if (result.transcription) {
+          transcriptionText = result.transcription
+        } else if (result.text) {
+          transcriptionText = result.text
+        }
+
+        if (transcriptionText) {
+          return {
+            success: true,
+            text: transcriptionText,
+            provider: 'sensevoice',
+            confidence: (result.data && result.data.confidence) || result.confidence || 0.9,
+          }
+        }
+      }
+
+      console.log('SenseVoice响应结构:', JSON.stringify(result, null, 2))
+      throw new Error('SenseVoice识别结果为空或格式不正确')
+    } catch (error) {
+      console.log('🎯 SenseVoice语音识别失败（已拦截）:', error.message || error)
+      return {
+        success: false,
+        error: error.message,
+        provider: 'sensevoice',
+      }
+    }
+  }
+
   // 智能STT路由
   async intelligentSTT(audioUri) {
     console.log('🔍 STT调试信息:')
     console.log('当前提供商设置:', this.currentProvider)
     console.log('服务可用性:', this.serviceAvailability)
-    console.log('Google配置:', {
-      apiKey: this.googleConfig.apiKey ? `${this.googleConfig.apiKey.substring(0, 10)}...` : 'undefined',
-      enabled: this.googleConfig.enabled,
-    })
 
     const provider = this.currentProvider === 'auto'
       ? this.selectBestProvider('stt') : this.currentProvider
@@ -493,6 +567,8 @@ class STTTTSService {
     console.log(`🎤 使用${provider}进行语音识别`)
 
     switch (provider) {
+      case 'sensevoice':
+        return await this.senseVoiceSpeechToText(audioUri)
       case 'google':
         return await this.googleSpeechToText(audioUri)
       case 'openai':
@@ -567,6 +643,62 @@ class STTTTSService {
     }
   }
 
+  // Edge TTS语音合成
+  async edgeTextToSpeech(text, options = {}) {
+    try {
+      console.log('🌐 使用Edge TTS语音合成')
+
+      // 语音配置
+      const voice = options.voice || 'zh-CN-XiaoyiNeural'
+      const rate = options.rate || '0%'
+      const pitch = options.pitch || '+0Hz'
+      
+      // 构建SSML
+      const ssml = `
+        <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-CN">
+          <voice name="${voice}">
+            <prosody rate="${rate}" pitch="${pitch}">
+              ${text}
+            </prosody>
+          </voice>
+        </speak>`
+
+      // 调用SenceVoiceService的WebSocket接口进行TTS
+      const senceVoiceService = require('./SenceVoiceService').default
+      
+      if (!senceVoiceService.isConnected) {
+        throw new Error('SenseVoice服务未连接')
+      }
+
+      // 使用SenceVoiceService的sendTTSRequest方法
+      const result = await senceVoiceService.sendTTSRequest(text, {
+        voice: voice,
+        rate: rate,
+        pitch: pitch,
+        format: 'mp3',
+      })
+
+      if (result.success && result.data && result.data.audio_data) {
+        return {
+          success: true,
+          audioData: result.data.audio_data,
+          provider: 'edge-tts',
+          format: 'mp3',
+          voice: voice,
+        }
+      }
+      
+      throw new Error('Edge TTS响应为空')
+    } catch (error) {
+      console.error('Edge TTS语音合成失败:', error)
+      return {
+        success: false,
+        error: error.message,
+        provider: 'edge-tts',
+      }
+    }
+  }
+
   // 智能TTS路由
   async intelligentTTS(text, options = {}) {
     const provider = this.currentProvider === 'auto'
@@ -575,6 +707,8 @@ class STTTTSService {
     console.log(`🔊 使用${provider}进行语音合成`)
 
     switch (provider) {
+      case 'edge-tts':
+        return await this.edgeTextToSpeech(text, options)
       case 'google':
         return await this.googleTextToSpeech(text)
       case 'openai':
@@ -606,67 +740,28 @@ class STTTTSService {
       console.log('🔑 API密钥:', `${this.googleConfig.apiKey.substring(0, 15)}...`)
       console.log('📄 音频文件:', audioUri)
 
-      // 将音频文件转换为base64
-      audioBlob = await this.convertAudioForGoogle(audioUri)
-      console.log('🎵 音频转换成功，长度:', audioBlob ? audioBlob.length : 0)
-
-      // 根据实际音频类型选择合适的编码
-      console.log('🔄 根据音频类型选择编码格式')
-      const fileExt = audioUri.split('.').pop().toLowerCase()
-      console.log('📄 文件扩展名:', fileExt)
-
-      const audioConfig = {
-        languageCode: this.googleConfig.sttLanguage,
-        enableAutomaticPunctuation: true,
+      // 检查是否为模拟录音，如果是则使用模拟STT
+      if (audioUri && audioUri.startsWith('mock://')) {
+        console.log('🎭 检测到模拟录音，使用模拟STT响应')
+        return await this.mockSpeechToText(audioUri)
       }
 
-      // 为M4A格式尝试不同的编码选项
-      if (fileExt === 'm4a') {
-        // M4A通常是AAC编码，让Google自动检测
-        console.log('🎵 M4A文件，使用自动检测模式获得最佳兼容性')
-        // 不设置encoding，让Google自动检测
-      } else if (fileExt === '3gp') {
-        audioConfig.encoding = 'AMR'
-        audioConfig.sampleRateHertz = 8000
-        console.log('📞 3GP文件，使用AMR编码')
-      } else if (fileExt === 'wav') {
-        audioConfig.encoding = 'LINEAR16'
-        audioConfig.sampleRateHertz = 16000
-        console.log('🎼 WAV文件，使用LINEAR16编码')
-      } else {
-        // 对于其他格式，尝试FLAC（Google支持且兼容性好）
-        audioConfig.encoding = 'FLAC'
-        console.log('🎶 未知格式，尝试FLAC编码')
-      }
+      // 将音频文件转换为base64并获取详细信息
+      const audioInfo = await this.convertAudioForGoogleWithInfo(audioUri)
+      audioBlob = audioInfo.base64Data
+      console.log('🎵 音频转换成功')
+      console.log('📊 音频信息:', {
+        大小: audioInfo.size,
+        类型: audioInfo.mimeType,
+        文件扩展名: audioInfo.fileExt
+      })
 
-      requestBody = {
-        config: audioConfig,
-        audio: {
-          content: audioBlob,
-        },
-      }
-
-      // 尝试多种编码格式，直到成功
-      const encodingOptions = []
-
-      // 为M4A文件优先尝试自动检测（不指定encoding）
-      if (fileExt === 'm4a') {
-        encodingOptions.push({}) // 自动检测
-        encodingOptions.push({ encoding: 'FLAC' })
-        encodingOptions.push({ encoding: 'LINEAR16', sampleRateHertz: 16000 })
-        encodingOptions.push({ encoding: 'WEBM_OPUS', sampleRateHertz: 48000 })
-      } else {
-        // 其他格式使用原有逻辑
-        if (audioConfig.encoding) {
-          encodingOptions.push({ encoding: audioConfig.encoding, sampleRateHertz: audioConfig.sampleRateHertz })
-        }
-        encodingOptions.push({ encoding: 'FLAC' }) // 通用备选
-        encodingOptions.push({ encoding: 'LINEAR16', sampleRateHertz: 16000 }) // 标准格式
-        encodingOptions.push({ encoding: 'MP3', sampleRateHertz: 44100 }) // 常见格式
-        encodingOptions.push({ encoding: 'WEBM_OPUS', sampleRateHertz: 48000 }) // Web格式
-      }
+      // 智能选择编码格式
+      const encodingOptions = this.getOptimalEncodingOptions(audioInfo)
+      console.log('🔧 将尝试以下编码选项:', encodingOptions.map(opt => opt.encoding || '自动检测'))
 
       let lastError = null
+      let detailedErrors = []
 
       for (const [index, encodingOption] of encodingOptions.entries()) {
         const encodingName = encodingOption.encoding || '自动检测'
@@ -700,40 +795,82 @@ class STTTTSService {
 
           console.log('📥 HTTP状态码:', response.status)
 
-          if (response.status === 200 && response.data && response.data.results && response.data.results.length > 0) {
-            const { transcript } = response.data.results[0].alternatives[0]
-            const confidence = response.data.results[0].alternatives[0].confidence || 1.0
+          if (response.status === 200) {
+            if (response.data && response.data.results && response.data.results.length > 0) {
+              const { transcript } = response.data.results[0].alternatives[0]
+              const confidence = response.data.results[0].alternatives[0].confidence || 1.0
 
-            console.log('✅ 语音识别成功 (编码:', encodingName, '):', transcript)
+              console.log('✅ 语音识别成功 (编码:', encodingName, '):', transcript)
 
-            return {
-              success: true,
-              text: transcript,
-              provider: 'google',
-              confidence,
-              language: this.googleConfig.sttLanguage,
-              usedEncoding: encodingName,
+              return {
+                success: true,
+                text: transcript,
+                provider: 'google',
+                confidence,
+                language: this.googleConfig.sttLanguage,
+                usedEncoding: encodingName,
+              }
+            } else if (response.data && response.data.results && response.data.results.length === 0) {
+              console.log('⚠️ 编码正确但未识别到语音内容')
+              return {
+                success: false,
+                error: '未能识别到语音内容，请确保录音清晰并包含可识别的语音',
+                provider: 'google',
+              }
+            } else {
+              // HTTP 200但数据结构异常
+              const errorMsg = `HTTP 200 但响应数据异常: ${JSON.stringify(response.data)}`
+              lastError = new Error(errorMsg)
+              detailedErrors.push({ encoding: encodingName, error: errorMsg })
+              console.log('❌ 编码', encodingName, '失败:', errorMsg)
             }
-          } if (response.status === 200 && response.data && response.data.results && response.data.results.length === 0) {
-            console.log('⚠️ 编码正确但未识别到语音内容')
-            return {
-              success: false,
-              error: '未能识别到语音内容，请确保录音清晰并包含可识别的语音',
-              provider: 'google',
-            }
+          } else {
+            // 非200状态码
+            const errorMsg = `HTTP ${response.status}: ${response.data?.error?.message || response.statusText || '未知错误'}`
+            lastError = new Error(errorMsg)
+            detailedErrors.push({ encoding: encodingName, error: errorMsg })
+            console.log('❌ 编码', encodingName, '失败:', errorMsg)
           }
-
-          lastError = new Error(`HTTP ${response.status}: ${response.data?.error?.message || '未知错误'}`)
-          console.log('❌ 编码', encodingName, '失败:', lastError.message)
         } catch (error) {
+          const errorMsg = error.response?.data?.error?.message || error.message
           lastError = error
-          console.log('❌ 编码', encodingName, '失败:', error.response?.data?.error?.message || error.message)
+          detailedErrors.push({ encoding: encodingName, error: errorMsg })
+          console.log('❌ 编码', encodingName, '失败:', errorMsg)
           continue // 尝试下一个编码
         }
       }
 
-      // 所有编码都失败了
-      throw lastError || new Error('所有编码格式都失败了')
+      // 所有编码都失败了，提供详细错误信息和建议
+      console.log('🚨 所有编码选项都失败了:')
+      detailedErrors.forEach((err, idx) => {
+        console.log(`  ${idx + 1}. ${err.encoding}: ${err.error}`)
+      })
+      
+      // 分析错误类型并提供建议
+      const hasAuthError = detailedErrors.some(err => 
+        err.error.includes('API key') || err.error.includes('authentication') || err.error.includes('403')
+      )
+      const hasBadEncoding = detailedErrors.some(err => 
+        err.error.includes('bad encoding') || err.error.includes('encoding')
+      )
+      const hasBadSampleRate = detailedErrors.some(err => 
+        err.error.includes('bad sample rate') || err.error.includes('sample rate')
+      )
+      
+      let errorSuggestion = '所有编码格式都失败了。'
+      if (hasAuthError) {
+        errorSuggestion += ' 请检查Google Cloud API密钥是否正确。'
+      } else if (hasBadEncoding && hasBadSampleRate) {
+        errorSuggestion += ' 音频文件可能已损坏或格式不受支持。'
+      } else if (hasBadEncoding) {
+        errorSuggestion += ' 音频编码格式可能不受支持。'
+      } else if (hasBadSampleRate) {
+        errorSuggestion += ' 音频采样率可能不正确。'
+      }
+      
+      console.log('💡 建议:', errorSuggestion)
+      
+      throw lastError || new Error(errorSuggestion)
     } catch (error) {
       // 使用console.log以避免触发任何可能的错误弹窗
       console.log('🎯 Google语音识别失败（已拦截）:', error.message || error)
@@ -799,11 +936,129 @@ class STTTTSService {
     }
   }
 
+  // 增强版音频转换（获取详细信息）
+  async convertAudioForGoogleWithInfo(audioUri) {
+    try {
+      console.log('🎵 开始转换音频文件并分析信息:', audioUri)
+      
+      const response = await fetch(audioUri)
+      if (!response.ok) {
+        throw new Error(`获取音频文件失败: ${response.status}`)
+      }
+      
+      const blob = await response.blob()
+      const fileExt = audioUri.split('.').pop().toLowerCase()
+      
+      console.log('📁 音频文件详细信息:')
+      console.log('  - 大小:', blob.size, 'bytes')
+      console.log('  - MIME类型:', blob.type)
+      console.log('  - 文件扩展名:', fileExt)
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          try {
+            const { result } = reader
+            if (typeof result === 'string' && result.includes(',')) {
+              const base64data = result.split(',')[1]
+              console.log('✅ Base64转换成功，长度:', base64data.length)
+              
+              resolve({
+                base64Data: base64data,
+                size: blob.size,
+                mimeType: blob.type,
+                fileExt: fileExt,
+                originalUri: audioUri
+              })
+            } else {
+              throw new Error('Base64转换结果格式异常')
+            }
+          } catch (err) {
+            reject(new Error(`Base64转换失败: ${err.message}`))
+          }
+        }
+        reader.onerror = () => {
+          reject(new Error(`FileReader错误: ${reader.error}`))
+        }
+        reader.readAsDataURL(blob)
+      })
+    } catch (error) {
+      console.error('音频转换失败:', error)
+      throw new Error(`音频转换失败: ${error.message}`)
+    }
+  }
+
+  // 智能选择最优编码选项
+  getOptimalEncodingOptions(audioInfo) {
+    const { mimeType, fileExt, size } = audioInfo
+    const encodingOptions = []
+    
+    console.log('🔍 根据音频信息智能选择编码:')
+    console.log('  - MIME类型:', mimeType)
+    console.log('  - 文件扩展名:', fileExt)
+    console.log('  - 文件大小:', size)
+
+    // 根据MIME类型和文件扩展名智能选择
+    if (mimeType && mimeType.includes('mp4') || fileExt === 'm4a') {
+      console.log('🎵 检测到MP4/M4A格式，优化编码顺序')
+      // M4A/MP4音频通常是AAC编码，但Google不直接支持，所以使用自动检测
+      encodingOptions.push({}) // 自动检测 - 最佳选择
+      encodingOptions.push({ encoding: 'FLAC' })
+      encodingOptions.push({ encoding: 'LINEAR16', sampleRateHertz: 44100 })
+      encodingOptions.push({ encoding: 'LINEAR16', sampleRateHertz: 16000 })
+    } else if (mimeType && mimeType.includes('wav') || fileExt === 'wav') {
+      console.log('🎼 检测到WAV格式，使用最佳配置')
+      encodingOptions.push({ encoding: 'LINEAR16', sampleRateHertz: 16000 })
+      encodingOptions.push({ encoding: 'LINEAR16', sampleRateHertz: 44100 })
+      encodingOptions.push({ encoding: 'FLAC' })
+      encodingOptions.push({}) // 自动检测
+    } else if (mimeType && mimeType.includes('mpeg') || fileExt === 'mp3') {
+      console.log('🎶 检测到MP3格式')
+      encodingOptions.push({ encoding: 'MP3', sampleRateHertz: 44100 })
+      encodingOptions.push({ encoding: 'MP3', sampleRateHertz: 48000 })
+      encodingOptions.push({ encoding: 'FLAC' })
+      encodingOptions.push({}) // 自动检测
+    } else if (fileExt === '3gp') {
+      console.log('📞 检测到3GP格式')
+      encodingOptions.push({ encoding: 'AMR', sampleRateHertz: 8000 })
+      encodingOptions.push({ encoding: 'AMR_WB', sampleRateHertz: 16000 })
+      encodingOptions.push({ encoding: 'FLAC' })
+    } else if (mimeType && mimeType.includes('webm') || fileExt === 'webm') {
+      console.log('🌐 检测到WebM格式')
+      encodingOptions.push({ encoding: 'WEBM_OPUS', sampleRateHertz: 48000 })
+      encodingOptions.push({ encoding: 'WEBM_OPUS', sampleRateHertz: 16000 })
+      encodingOptions.push({ encoding: 'FLAC' })
+    } else {
+      console.log('❓ 未知格式，使用通用编码顺序')
+      // 通用备选方案，按兼容性排序
+      encodingOptions.push({}) // 自动检测
+      encodingOptions.push({ encoding: 'FLAC' })
+      encodingOptions.push({ encoding: 'LINEAR16', sampleRateHertz: 16000 })
+      encodingOptions.push({ encoding: 'MP3', sampleRateHertz: 44100 })
+    }
+
+    // 添加最后的备选选项
+    encodingOptions.push({ encoding: 'LINEAR16', sampleRateHertz: 8000 })
+    encodingOptions.push({ encoding: 'MULAW', sampleRateHertz: 8000 })
+
+    console.log('📋 最终编码选项列表:', encodingOptions.map((opt, idx) => 
+      `${idx + 1}. ${opt.encoding || '自动检测'}${opt.sampleRateHertz ? ` (${opt.sampleRateHertz}Hz)` : ''}`
+    ))
+
+    return encodingOptions
+  }
+
   // Azure语音识别
   async azureSpeechToText(audioUri) {
     try {
       if (!this.azureConfig.subscriptionKey) {
         throw new Error('Azure订阅密钥未配置')
+      }
+
+      // 检查是否为模拟录音
+      if (audioUri && audioUri.startsWith('mock://')) {
+        console.log('🎭 检测到模拟录音，使用模拟STT响应')
+        return await this.mockSpeechToText(audioUri)
       }
 
       console.log('☁️ 使用Azure语音识别')
@@ -909,7 +1164,7 @@ class STTTTSService {
   }
 
   // Web Speech API STT (仅web平台)
-  async webSpeechToText(audioUri) {
+  async webSpeechToText() {
     try {
       if (Platform.OS !== 'web' || !window.webkitSpeechRecognition) {
         throw new Error('Web Speech Recognition不可用')

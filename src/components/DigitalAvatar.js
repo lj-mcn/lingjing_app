@@ -99,6 +99,7 @@ export default function DigitalAvatar({
           model: llmConfig.responseLLM.model,
         },
         websocket_url: llmConfig.responseLLM.websocket_url, // 添加顶级websocket_url
+        sencevoice_url: llmConfig.senseVoice?.websocket_url, // 添加SenseVoice URL配置
         sttTts: {},
       }
 
