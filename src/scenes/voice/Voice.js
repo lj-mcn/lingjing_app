@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react'
 import {
-  Text, View, ScrollView, StyleSheet, TouchableOpacity, Alert, Image,
+  Text, View, ScrollView, StyleSheet, TouchableOpacity, Alert, Image, Animated,
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
@@ -28,6 +28,7 @@ export default function Voice() {
   const [chatStarted, setChatStarted] = useState(false)
   const [smartConversationMode, setSmartConversationMode] = useState(false)
   const [vadState, setVadState] = useState('idle') // 语音活动状态
+  const [paperBallScale] = useState(new Animated.Value(1)) // 纸团缩放动画
 
   useEffect(() => {
     console.log('Voice screen - 嘎巴龙语音交互')
@@ -39,6 +40,38 @@ export default function Voice() {
 
   const startChat = () => {
     setChatStarted(true)
+  }
+
+  // 纸团点击处理，立即触发并播放动画
+  const handlePaperBallPress = () => {
+    // 立即执行startChat
+    startChat()
+    // 同时播放放大动画作为视觉反馈
+    Animated.spring(paperBallScale, {
+      toValue: 1.2,
+      useNativeDriver: true,
+      tension: 150,
+      friction: 3,
+    }).start()
+  }
+
+  // 纸团按下动画
+  const handlePaperBallPressIn = () => {
+    Animated.spring(paperBallScale, {
+      toValue: 1.2,
+      useNativeDriver: true,
+      tension: 150,
+      friction: 3,
+    }).start()
+  }
+
+  const handlePaperBallPressOut = () => {
+    Animated.spring(paperBallScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 150,
+      friction: 3,
+    }).start()
   }
 
   const startVoiceRecording = async () => {
@@ -142,14 +175,16 @@ export default function Voice() {
           <View style={styles.paperBallContainer}>
             <TouchableOpacity
               style={styles.paperBallButton}
-              onPress={startChat}
-              activeOpacity={0.8}
+              onPress={handlePaperBallPress}
+              activeOpacity={1}
             >
-              <Image
-                source={require('../../../assets/images/纸团.png')}
-                style={styles.paperBallImage}
-                resizeMode="contain"
-              />
+              <Animated.View style={{ transform: [{ scale: paperBallScale }] }}>
+                <Image
+                  source={require('../../../assets/images/纸团.png')}
+                  style={styles.paperBallImage}
+                  resizeMode="contain"
+                />
+              </Animated.View>
             </TouchableOpacity>
           </View>
         ) : (
@@ -164,8 +199,8 @@ export default function Voice() {
                 onPress={toggleSmartConversationMode}
                 activeOpacity={0.8}
               >
-                <Text style={styles.smartButtonIcon}>
-                  {smartConversationMode ? '🤖' : '🚀'}
+                <Text style={styles.smartButtonText}>
+                  {smartConversationMode ? '结束对话 ⏹️' : '开始对话 🎤'}
                 </Text>
               </TouchableOpacity>
 
@@ -375,16 +410,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    borderRadius: 80,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 12,
   },
   paperBallImage: {
     width: 100,
@@ -411,31 +436,46 @@ const styles = StyleSheet.create({
   smartButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 35,
-    borderRadius: 30,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     marginBottom: 10,
-    minWidth: 220,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 15,
   },
   smartButtonActive: {
-    backgroundColor: '#ff6b6b',
-    shadowColor: '#ff6b6b',
+    backgroundColor: '#f5f5dc',
+    shadowColor: '#d2b48c',
+    borderWidth: 1,
+    borderColor: '#e6e6fa',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 15,
   },
   smartButtonInactive: {
-    backgroundColor: '#4ecdc4',
-    shadowColor: '#4ecdc4',
+    backgroundColor: '#f5f5dc',
+    shadowColor: '#d2b48c',
+    borderWidth: 1,
+    borderColor: '#e6e6fa',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 15,
   },
   smartButtonIcon: {
     fontSize: 28,
     marginBottom: 5,
   },
   smartButtonText: {
-    color: 'white',
-    fontSize: 18,
+    color: '#8b4513',
+    fontSize: 16,
     fontWeight: 'bold',
+    textAlign: 'center',
+    textShadowColor: 'rgba(139, 69, 19, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 })

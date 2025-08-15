@@ -181,12 +181,20 @@ export default function Home() {
               <View style={styles.arrowContainer}>
                 <Animated.View style={[styles.arrowWrapper, { opacity: arrowOpacity, transform: [{ scale: navButtonScale }] }]}>
                   <TouchableOpacity onPress={onLeftArrowPress}>
-                    <Text style={[styles.arrowText, { color: colorScheme.text }]}>⬅️ 语音</Text>
+                    <Image
+                      source={require('../../../assets/images/左.png')}
+                      style={styles.arrowImage}
+                      resizeMode="contain"
+                    />
                   </TouchableOpacity>
                 </Animated.View>
                 <Animated.View style={[styles.arrowWrapper, { opacity: arrowOpacity, transform: [{ scale: navButtonScale }] }]}>
                   <TouchableOpacity onPress={onRightArrowPress}>
-                    <Text style={[styles.arrowText, { color: colorScheme.text }]}>文字 ➡️</Text>
+                    <Image
+                      source={require('../../../assets/images/右.png')}
+                      style={styles.arrowImage}
+                      resizeMode="contain"
+                    />
                   </TouchableOpacity>
                 </Animated.View>
               </View>
@@ -259,6 +267,10 @@ const styles = StyleSheet.create({
   arrowText: {
     fontSize: 24,
     fontWeight: '600',
+  },
+  arrowImage: {
+    width: 80,
+    height: 80,
   },
   menuButton: {
     paddingLeft: 15,

@@ -437,24 +437,8 @@ export default function DigitalAvatar({
       activeOpacity={enableInteraction ? 0.8 : 1}
       disabled={!enableInteraction || !isInitialized}
     >
-      {/* 智能背景融合层 */}
-      <Animated.View style={[
-        styles.backgroundBlendContainer,
-        {
-          opacity: glowOpacity,
-          transform: [{ scale: pulseScale }],
-        },
-      ]}
-      >
-        <LinearGradient
-          colors={getAmbientLightColors()}
-          style={styles.backgroundBlend}
-          start={{ x: 0.5, y: 0.5 }}
-          end={{ x: 1, y: 1 }}
-        />
-      </Animated.View>
 
-      <View style={styles.videoContainer}>
+      <View style={[styles.videoContainer, videoStyle && { width: videoStyle.width, height: videoStyle.height }]}>
         {/* 毛玻璃背景层（如果支持） */}
         <BlurView
           intensity={isDark ? 25 : 20}
@@ -521,29 +505,7 @@ export default function DigitalAvatar({
           }}
         />
 
-        {/* 渐变遮罩层 - 让边缘自然融入背景 */}
-        <Animated.View style={[
-          styles.gradientMaskContainer,
-          { opacity: maskOpacity },
-        ]}
-        >
-          <LinearGradient
-            colors={getGradientMaskColors()}
-            style={styles.gradientMask}
-            start={{ x: 0.5, y: 0.5 }}
-            end={{ x: 1, y: 1 }}
-          />
-        </Animated.View>
 
-        {/* 优化的内发光效果 */}
-        <Animated.View style={[
-          styles.innerGlow,
-          {
-            opacity: status === 'speaking' ? 0.3 : 0.15,
-            backgroundColor: `${getStatusColor()}30`, // 降低透明度
-          },
-        ]}
-        />
 
         {/* 视频加载失败时的后备显示 */}
         {videoError && (
