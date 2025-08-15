@@ -2,9 +2,11 @@ import React, {
   useEffect, useState, useContext, useRef,
 } from 'react'
 import {
-  Text, View, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image,
+  Text, View, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image, Animated, Dimensions,
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
+import { useLayoutEffect } from 'react'
+import { PanGestureHandler, State } from 'react-native-gesture-handler'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
 import Button from '../../components/Button'
@@ -38,17 +40,60 @@ export default function TextChat() {
   const [showSadVideo, setShowSadVideo] = useState(false)
   const [showScaredVideo, setShowScaredVideo] = useState(false)
   const [memoryStats, setMemoryStats] = useState({ turnCount: 0, hasHistory: false })
+  const [paperBallScale] = useState(new Animated.Value(1)) // 纸团缩放动画
+  const [avatarPosition] = useState(new Animated.ValueXY({ x: 0, y: 0 })) // 嘉巴龙位置
+  const [avatarScale] = useState(new Animated.Value(1)) // 嘉巴龙缩放
+  const [dragScale] = useState(new Animated.Value(1)) // 拖拽状态缩放
+  const [isAvatarExpanded, setIsAvatarExpanded] = useState(false) // 嘉巴龙是否放大状态
+  const [savedPosition, setSavedPosition] = useState({ x: 0, y: 0 }) // 保存放大前的位置
+  const [isDragging, setIsDragging] = useState(false) // 是否在拖拽状态
+  const longPressTimer = useRef(null) // 长按计时器
+  const screenWidth = Dimensions.get('window').width
+  const screenHeight = Dimensions.get('window').height
 
   useEffect(() => {
     console.log('Text screen - 嘎巴龙文字交互')
   }, [])
 
+  // 组件卸载时清理计时器
   useEffect(() => {
-    // 滚动到最新消息
+    return () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current)
+      }
+    }
+  }, [])
+
+  // 设置导航栏
+  useLayoutEffect(() => {
+    if (chatStarted) {
+      navigation.setOptions({
+        headerTitle: '💬 文字对话',
+      })
+    } else {
+      navigation.setOptions({
+        headerTitle: '💬 文字对话',
+      })
+    }
+  }, [navigation, chatStarted])
+
+  useEffect(() => {
+    // 滚动到最新消息 - 延迟确保渲染完成
     if (messages.length > 0 && scrollViewRef.current) {
-      scrollViewRef.current.scrollToEnd({ animated: true })
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true })
+      }, 100)
     }
   }, [messages])
+
+  // 监听isTyping状态变化，也要滚动到底部
+  useEffect(() => {
+    if (isTyping && scrollViewRef.current) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true })
+      }, 100)
+    }
+  }, [isTyping])
 
   // 更新记忆状态
   useEffect(() => {
@@ -66,6 +111,133 @@ export default function TextChat() {
   const startChat = () => {
     setChatStarted(true)
   }
+
+  // 纸团点击处理，立即触发并播放动画
+  const handlePaperBallPress = () => {
+    // 立即执行startChat
+    startChat()
+    // 同时播放放大动画作为视觉反馈
+    Animated.spring(paperBallScale, {
+      toValue: 1.2,
+      useNativeDriver: true,
+      tension: 150,
+      friction: 3,
+    }).start()
+  }
+
+  // 处理嘉巴龙拖拽手势
+  const handleAvatarGesture = (event) => {
+    const { state, translationX, translationY } = event.nativeEvent
+    
+    if (state === State.BEGAN) {
+      // 手势开始
+      setIsDragging(false)
+      
+    } else if (state === State.ACTIVE) {
+      // 手势活跃状态 - 直接跟随拖拽
+      if (!isAvatarExpanded) {
+        // 立即开始拖拽，不需要距离判断
+        if (!isDragging) {
+          setIsDragging(true)
+          Animated.spring(dragScale, {
+            toValue: 1.1,
+            useNativeDriver: false,
+            tension: 150,
+            friction: 8,
+          }).start()
+        }
+        
+        // 实时更新位置跟随手指
+        avatarPosition.setValue({
+          x: translationX,
+          y: translationY,
+        })
+      }
+      
+    } else if (state === State.END || state === State.CANCELLED || state === State.FAILED) {
+      // 手势结束
+      if (isDragging && !isAvatarExpanded) {
+        // 拖拽结束，恢复拖拽缩放并固定位置
+        Animated.spring(dragScale, {
+          toValue: 1,
+          useNativeDriver: false,
+          tension: 150,
+          friction: 8,
+        }).start()
+        
+        // 固定在新位置
+        const currentX = avatarPosition.x._value
+        const currentY = avatarPosition.y._value
+        
+        // 先获取当前的offset
+        const currentOffsetX = avatarPosition.x._offset || 0
+        const currentOffsetY = avatarPosition.y._offset || 0
+        
+        // 设置新的offset为当前offset + 当前值
+        avatarPosition.setOffset({
+          x: currentOffsetX + currentX,
+          y: currentOffsetY + currentY,
+        })
+        
+        // 重置值为0，这样下次拖拽从0开始计算
+        avatarPosition.setValue({ x: 0, y: 0 })
+      }
+      
+      setIsDragging(false)
+    }
+  }
+
+
+  // 放大镜按钮切换放大/缩小
+  const handleMagnifyPress = () => {
+    if (!isAvatarExpanded) {
+      // 保存当前位置（包括offset）
+      const currentX = avatarPosition.x._value + (avatarPosition.x._offset || 0)
+      const currentY = avatarPosition.y._value + (avatarPosition.y._offset || 0)
+      setSavedPosition({ x: currentX, y: currentY })
+      
+      setIsAvatarExpanded(true)
+      // 重置拖拽缩放，放大并移动到屏幕中央
+      Animated.parallel([
+        Animated.spring(dragScale, {
+          toValue: 1,
+          useNativeDriver: false,
+        }),
+        Animated.spring(avatarScale, {
+          toValue: 4,
+          useNativeDriver: false,
+        }),
+        Animated.spring(avatarPosition, {
+          toValue: { 
+            x: screenWidth/2 - 20 - 25, // 屏幕中心 - container右偏移 - avatar宽度一半
+            y: screenHeight/2 - 20 - 37.5 // 屏幕中心 - container上偏移 - avatar高度一半  
+          }, 
+          useNativeDriver: false,
+        }),
+      ]).start(() => {
+        // 放大后清除offset，使用新的绝对位置
+        avatarPosition.setOffset({ x: 0, y: 0 })
+      })
+    } else {
+      // 缩小并回到保存的位置
+      setIsAvatarExpanded(false)
+      Animated.parallel([
+        Animated.spring(avatarScale, {
+          toValue: 1,
+          useNativeDriver: false,
+        }),
+        Animated.spring(avatarPosition, {
+          toValue: savedPosition, // 回到保存的位置
+          useNativeDriver: false,
+        }),
+      ]).start(() => {
+        // 动画完成后重新设置offset
+        avatarPosition.setOffset(savedPosition)
+        avatarPosition.setValue({ x: 0, y: 0 })
+      })
+    }
+  }
+
 
   const handleMessage = (message) => {
     setMessages((prev) => [...prev, message])
@@ -203,26 +375,11 @@ export default function TextChat() {
   }
 
   const clearMessages = () => {
-    console.log('Clear messages requested')
-    // Alert.alert(
-    //   '清空对话',
-    //   '确定要清空所有对话记录和记忆吗？这将删除所有聊天历史。',
-    //   [
-    //     { text: '取消', style: 'cancel' },
-    //     {
-    //       text: '确定',
-    //       onPress: () => {
-    //         setMessages([])
-    //         // 清空对话记忆
-    //         responseLLMService.clearMemory()
-    //       },
-    //       style: 'destructive',
-    //     },
-    //   ],
-    // )
+    console.log('Clear messages requested - current messages count:', messages.length)
     // 直接清空
     setMessages([])
     responseLLMService.clearMemory()
+    console.log('Messages cleared - new count should be 0')
   }
 
   return (
@@ -232,55 +389,56 @@ export default function TextChat() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.container}>
-          {/* 头部标题 */}
-          <View style={styles.headerContainer}>
-            <Text style={[styles.title, { color: colorScheme.text }]}>
-              💬 文字对话
-            </Text>
-            <Text style={[styles.subtitle, { color: colorScheme.text }]}>
-              与嘎巴龙进行文字交流
-            </Text>
-          </View>
+          {!chatStarted && (
+            <>
+              {/* 头部标题 */}
+              <View style={styles.headerContainer}>
+                <Text style={[styles.title, { color: colorScheme.text }]}>
+                  💬 文字对话
+                </Text>
+                <Text style={[styles.subtitle, { color: colorScheme.text }]}>
+                  与嘎巴龙进行文字交流
+                </Text>
+              </View>
 
-          {/* 数字人区域 */}
-          <View style={styles.avatarContainer}>
-            <DigitalAvatar
-              style={styles.avatar}
-              videoStyle={styles.avatarVideo}
-              onMessage={handleMessage}
-              enableInteraction={chatStarted}
-              showAngryVideo={showAngryVideo}
-              onAngryVideoEnd={handleAngryVideoEnd}
-              showHappyVideo={showHappyVideo}
-              onHappyVideoEnd={handleHappyVideoEnd}
-              showSadVideo={showSadVideo}
-              onSadVideoEnd={handleSadVideoEnd}
-              showScaredVideo={showScaredVideo}
-              onScaredVideoEnd={handleScaredVideoEnd}
-            />
-            <Text style={[styles.avatarStatus, { color: colorScheme.text }]}>
-              {!chatStarted ? '😊 点击纸团开始对话'
-                : showAngryVideo ? '😡 嘎巴龙生气了！'
-                  : showHappyVideo ? '🥳 嘎巴龙好开心！'
-                    : showSadVideo ? '😢 嘎巴龙伤心了...'
-                      : showScaredVideo ? '😱 嘎巴龙害怕了！'
-                        : isTyping ? '💭 正在思考...' : '😊 准备聊天'}
-            </Text>
-          </View>
+              {/* 数字人区域 */}
+              <View style={styles.avatarContainer}>
+                <DigitalAvatar
+                  style={styles.avatar}
+                  videoStyle={styles.avatarVideo}
+                  onMessage={handleMessage}
+                  enableInteraction={false}
+                  showAngryVideo={showAngryVideo}
+                  onAngryVideoEnd={handleAngryVideoEnd}
+                  showHappyVideo={showHappyVideo}
+                  onHappyVideoEnd={handleHappyVideoEnd}
+                  showSadVideo={showSadVideo}
+                  onSadVideoEnd={handleSadVideoEnd}
+                  showScaredVideo={showScaredVideo}
+                  onScaredVideoEnd={handleScaredVideoEnd}
+                />
+                <Text style={[styles.avatarStatus, { color: colorScheme.text }]}>
+                  😊 点击纸团开始对话
+                </Text>
+              </View>
+            </>
+          )}
 
           {!chatStarted ? (
             /* 纸团按钮 - 开始聊天 */
             <View style={styles.paperBallContainer}>
               <TouchableOpacity
                 style={styles.paperBallButton}
-                onPress={startChat}
-                activeOpacity={0.8}
+                onPress={handlePaperBallPress}
+                activeOpacity={1}
               >
-                <Image
-                  source={require('../../../assets/images/纸团.png')}
-                  style={styles.paperBallImage}
-                  resizeMode="contain"
-                />
+                <Animated.View style={{ transform: [{ scale: paperBallScale }] }}>
+                  <Image
+                    source={require('../../../assets/images/纸团.png')}
+                    style={styles.paperBallImage}
+                    resizeMode="contain"
+                  />
+                </Animated.View>
               </TouchableOpacity>
               <Text style={[styles.paperBallText, { color: colorScheme.text }]}>
                 点击纸团开始文字对话 ✨
@@ -288,8 +446,46 @@ export default function TextChat() {
             </View>
           ) : (
             <>
-              {/* 对话区域 */}
-              <View style={[styles.chatContainer, { backgroundColor: colorScheme.cardBackground }]}>
+              {/* 浮动的可拖拽嘉巴龙 */}
+              <View style={styles.floatingContainer}>
+                <PanGestureHandler
+                  onGestureEvent={handleAvatarGesture}
+                  onHandlerStateChange={handleAvatarGesture}
+                  minDist={0}
+                  shouldCancelWhenOutside={false}
+                  activeOffsetX={[-10, 10]}
+                  activeOffsetY={[-10, 10]}
+                >
+                  <Animated.View style={[
+                    styles.floatingAvatar,
+                    {
+                      transform: [
+                        { translateX: avatarPosition.x },
+                        { translateY: avatarPosition.y },
+                        { scale: Animated.multiply(avatarScale, dragScale) },
+                      ],
+                    },
+                  ]}>
+                    <DigitalAvatar
+                      style={styles.floatingAvatarContent}
+                      videoStyle={styles.floatingAvatarVideo}
+                      enableInteraction={false}
+                      showAngryVideo={showAngryVideo}
+                      onAngryVideoEnd={handleAngryVideoEnd}
+                      showHappyVideo={showHappyVideo}
+                      onHappyVideoEnd={handleHappyVideoEnd}
+                      showSadVideo={showSadVideo}
+                      onSadVideoEnd={handleSadVideoEnd}
+                      showScaredVideo={showScaredVideo}
+                      onScaredVideoEnd={handleScaredVideoEnd}
+                    />
+                  </Animated.View>
+                </PanGestureHandler>
+              </View>
+              
+
+              {/* 对话区域 - 放大版本 */}
+              <View style={[styles.expandedChatContainer, { backgroundColor: colorScheme.cardBackground }]}>
                 <View style={styles.chatHeader}>
                   <View style={styles.chatHeaderLeft}>
                     <Text style={[styles.chatTitle, { color: colorScheme.text }]}>对话记录</Text>
@@ -299,11 +495,24 @@ export default function TextChat() {
                       </Text>
                     )}
                   </View>
-                  {messages.length > 0 && (
-                    <TouchableOpacity onPress={clearMessages}>
-                      <Text style={styles.clearButton}>🗑️ 清空</Text>
+                  <View style={styles.chatHeaderRight}>
+                    {/* 放大镜按钮 - 对话记录右上角 */}
+                    <TouchableOpacity
+                      style={styles.chatMagnifyButton}
+                      onPress={handleMagnifyPress}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.chatMagnifyButtonText}>
+                        {isAvatarExpanded ? '🔍−' : '🔍+'}
+                      </Text>
                     </TouchableOpacity>
-                  )}
+                    <TouchableOpacity 
+                      onPress={clearMessages}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.clearButton}>🗑️ 清空({messages.length})</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <ScrollView
@@ -351,31 +560,43 @@ export default function TextChat() {
                     </View>
                   )}
                 </ScrollView>
-              </View>
-
-              {/* 输入区域 */}
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={[styles.textInput, {
-                    backgroundColor: colorScheme.inputBackground,
-                    color: colorScheme.text,
-                    borderColor: isDark ? '#555' : '#ddd',
-                  }]}
-                  placeholder="输入消息..."
-                  placeholderTextColor={isDark ? '#999' : '#666'}
-                  value={inputText}
-                  onChangeText={setInputText}
-                  multiline
-                  maxLength={500}
-                  editable={!isTyping}
-                />
-                <Button
-                  label={isTyping ? '...' : '发送'}
-                  color={colors.tertiary}
-                  onPress={handleSendText}
-                  style={styles.sendButton}
-                  disable={isTyping || inputText.trim().length === 0}
-                />
+                
+                {/* 输入区域 - 在对话记录内部 */}
+                <View style={styles.inputContainer}>
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={[styles.textInput, {
+                        backgroundColor: colorScheme.inputBackground,
+                        color: colorScheme.text,
+                        borderColor: isDark ? '#555' : '#ddd',
+                      }]}
+                      placeholder="输入消息..."
+                      placeholderTextColor={isDark ? '#999' : '#666'}
+                      value={inputText}
+                      onChangeText={setInputText}
+                      multiline
+                      maxLength={500}
+                      editable={!isTyping}
+                    />
+                    
+                    {/* 内置发送按钮 */}
+                    <TouchableOpacity
+                      style={[
+                        styles.inlineSendButton,
+                        {
+                          backgroundColor: isTyping || inputText.trim().length === 0 ? '#ccc' : colors.tertiary,
+                        }
+                      ]}
+                      onPress={handleSendText}
+                      disabled={isTyping || inputText.trim().length === 0}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.inlineSendButtonText}>
+                        {isTyping ? '...' : '发送'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
             </>
           )}
@@ -405,7 +626,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 30, // 与语音界面保持一致
+    marginBottom: 15,
   },
   title: {
     fontSize: fontSize.xLarge,
@@ -421,18 +642,18 @@ const styles = StyleSheet.create({
   avatarContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20, // 与语音界面保持一致
+    paddingVertical: 10,
     position: 'relative',
-    marginBottom: 30, // 与语音界面保持一致
+    marginBottom: 15,
   },
   avatar: {
     marginBottom: 15, // 与语音界面保持一致
     // 移除阴影，由DigitalAvatar组件内部处理
   },
   avatarVideo: {
-    width: 200, // 统一尺寸，与语音界面一致
-    height: 300,
-    borderRadius: 15, // 统一圆角
+    width: 150, // 文字界面使用更小的数字人
+    height: 225,
+    borderRadius: 15,
   },
   avatarStatus: {
     fontSize: fontSize.middle, // 与语音界面保持一致
@@ -443,7 +664,8 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 15,
     padding: 15,
-    marginBottom: 15,
+    marginBottom: 5,
+    marginTop: -20,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -461,6 +683,11 @@ const styles = StyleSheet.create({
   },
   chatHeaderLeft: {
     flex: 1,
+  },
+  chatHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   chatTitle: {
     fontSize: fontSize.large,
@@ -511,9 +738,13 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   inputContainer: {
+    paddingTop: 15,
+    paddingBottom: 10,
+  },
+  inputWrapper: {
     flexDirection: 'row',
-    paddingVertical: 10,
     alignItems: 'flex-end',
+    position: 'relative',
   },
   textInput: {
     flex: 1,
@@ -521,35 +752,38 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 15,
     paddingVertical: 10,
-    marginRight: 10,
+    paddingRight: 60, // 给内置按钮留空间
     fontSize: fontSize.middle,
     maxHeight: 100,
     minHeight: 40,
   },
-  sendButton: {
-    minWidth: 60,
+  inlineSendButton: {
+    position: 'absolute',
+    right: 5,
+    bottom: 5,
+    paddingHorizontal: 15,
     paddingVertical: 8,
+    borderRadius: 15,
+    minWidth: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineSendButtonText: {
+    color: 'white',
+    fontSize: fontSize.small,
+    fontWeight: '600',
   },
   paperBallContainer: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 10,
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 10,
   },
   paperBallButton: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    borderRadius: 80,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 12,
   },
   paperBallImage: {
     width: 100,
@@ -561,5 +795,62 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     opacity: 0.8,
+  },
+  // 浮动嘉巴龙容器样式
+  floatingContainer: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10000,
+    elevation: 10000, // Android阴影层级
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // 浮动嘉巴龙样式
+  floatingAvatar: {
+    width: 50,
+    height: 75,
+    backgroundColor: 'transparent',
+  },
+  floatingAvatarContent: {
+    backgroundColor: 'transparent',
+    width: 50,
+    height: 75,
+  },
+  floatingAvatarVideo: {
+    width: 50,
+    height: 75,
+    borderRadius: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+  },
+  // 放大的对话容器
+  expandedChatContainer: {
+    flex: 1,
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 5,
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 3,
+  },
+  // 放大镜按钮样式 - 对话记录右上角
+  chatMagnifyButton: {
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    borderRadius: 18,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatMagnifyButtonText: {
+    fontSize: 14,
+    color: 'white',
   },
 })
