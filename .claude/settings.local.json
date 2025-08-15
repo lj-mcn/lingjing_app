@@ -13,7 +13,11 @@
       "Bash(rm:*)",
       "Bash(git fetch:*)",
       "Bash(git commit:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(git push:*)",
+      "Bash(npm install:*)",
+      "Bash(npx expo:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []
