@@ -2,19 +2,16 @@ import React, { useState, useEffect, useContext } from 'react'
 import {
   Text, View, StyleSheet, Platform,
 } from 'react-native'
-import { doc, updateDoc } from 'firebase/firestore'
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { Avatar } from '@rneui/themed'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
 import { useNavigation } from '@react-navigation/native'
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
 import Spinner from 'react-native-loading-spinner-overlay'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import Button from '../../components/Button'
 import TextInputBox from '../../components/TextInputBox'
-import { firestore, storage, auth } from '../../firebase/config'
+import { supabase } from '../../../lib/supabase'
 import { colors, fontSize } from '../../theme'
 import { UserDataContext } from '../../context/UserDataContext'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
@@ -24,9 +21,9 @@ export default function Edit() {
   const { userData } = useContext(UserDataContext)
   const { scheme } = useContext(ColorSchemeContext)
   const navigation = useNavigation()
-  const [fullName, setFullName] = useState(userData.fullName)
+  const [fullName, setFullName] = useState(userData.full_name || userData.fullName)
   const [progress, setProgress] = useState('')
-  const [avatar, setAvatar] = useState(userData.avatar)
+  const [avatar, setAvatar] = useState(userData.avatar_url || userData.avatar)
   const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -66,27 +63,35 @@ export default function Edit() {
             compress: 0.4,
           },
         )
-        const localUri = await fetch(manipulatorResult.uri)
-        const localBlob = await localUri.blob()
-        const filename = userData.id + new Date().getTime()
-        const storageRef = ref(storage, `avatar/${userData.id}/${filename}`)
-        const uploadTask = uploadBytesResumable(storageRef, localBlob)
-        uploadTask.on('state_changed',
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-            setProgress(`${parseInt(progress)}%`)
-          },
-          (error) => {
-            console.log(error)
-            console.error('Upload failed.')
-            // alert('Upload failed.')
-          },
-          () => {
-            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-              setProgress('')
-              setAvatar(downloadURL)
-            })
+        
+        // Convert image to blob for upload
+        const response = await fetch(manipulatorResult.uri)
+        const blob = await response.blob()
+        const arrayBuffer = await blob.arrayBuffer()
+        
+        const filename = `${userData.id}/${new Date().getTime()}.jpg`
+        
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from('avatars')
+          .upload(filename, arrayBuffer, {
+            contentType: 'image/jpeg',
+            upsert: true
           })
+        
+        if (error) {
+          console.error('Upload failed:', error)
+          // alert('Upload failed.')
+          return
+        }
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filename)
+        
+        setProgress('')
+        setAvatar(publicUrl)
       }
     } catch (e) {
       console.log('error', e.message)
@@ -98,13 +103,19 @@ export default function Edit() {
   const profileUpdate = async () => {
     try {
       const data = {
-        id: userData.id,
-        email: userData.email,
-        fullName,
-        avatar,
+        full_name: fullName,
+        avatar_url: avatar,
       }
-      const usersRef = doc(firestore, 'users', userData.id)
-      await updateDoc(usersRef, data)
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(data)
+        .eq('id', userData.id)
+      
+      if (error) {
+        throw error
+      }
+      
       navigation.goBack()
     } catch (e) {
       console.error('Profile update error:', e)
@@ -120,10 +131,25 @@ export default function Edit() {
     }
     try {
       setSpinner(true)
-      const user = auth.currentUser
-      const credential = EmailAuthProvider.credential(user.email, currentPassword)
-      await reauthenticateWithCredential(user, credential)
-      await updatePassword(user, password)
+      
+      // Supabase requires re-authentication for password change
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: userData.email,
+        password: currentPassword,
+      })
+      
+      if (signInError) {
+        throw new Error('Current password is incorrect')
+      }
+      
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      })
+      
+      if (error) {
+        throw error
+      }
+      
       showToast({
         title: 'Password changed',
         body: 'Your password has changed.',
