@@ -6,12 +6,10 @@ import { BlurView } from 'expo-blur'
 import { Avatar } from '@rneui/themed'
 import Dialog from 'react-native-dialog'
 import Spinner from 'react-native-loading-spinner-overlay'
-import { doc, deleteDoc } from 'firebase/firestore'
 import { useNavigation } from '@react-navigation/native'
-import { signOut, deleteUser } from 'firebase/auth'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import Button from '../../components/Button'
-import { firestore, auth } from '../../firebase/config'
+import { supabase } from '../../../lib/supabase'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
 import { UserDataContext } from '../../context/UserDataContext'
 import { colors, fontSize } from '../../theme'
@@ -36,14 +34,17 @@ export default function Profile() {
     navigation.navigate('Edit', { userData })
   }
 
-  const onSignOutPress = () => {
-    signOut(auth)
-      .then(async () => {
-        await Restart()
-      })
-      .catch((error) => {
+  const onSignOutPress = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
         console.log(error.message)
-      })
+      } else {
+        await Restart()
+      }
+    } catch (error) {
+      console.log(error.message)
+    }
   }
 
   const showDialog = () => {
@@ -57,26 +58,47 @@ export default function Profile() {
   const accountDelete = async () => {
     try {
       setSpinner(true)
-      const tokensDocumentRef = doc(firestore, 'tokens', userData.id)
-      const usersDocumentRef = doc(firestore, 'users', userData.id)
-      await deleteDoc(tokensDocumentRef)
-      await deleteDoc(usersDocumentRef)
-      const user = auth.currentUser
-      deleteUser(user).then(() => {
+      
+      // Delete user profile from profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userData.id)
+      
+      if (profileError) {
+        console.error('Error deleting profile:', profileError)
+      }
+      
+      // Delete push tokens if they exist
+      const { error: tokenError } = await supabase
+        .from('tokens')
+        .delete()
+        .eq('id', userData.id)
+      
+      if (tokenError) {
+        console.error('Error deleting tokens:', tokenError)
+      }
+      
+      // Delete user account from Supabase Auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(userData.id)
+      
+      if (authError) {
+        console.error('Error deleting user account:', authError)
         setSpinner(false)
-        signOut(auth)
-          .then(() => {
-            console.log('user deleted')
-          })
-          .catch((error) => {
-            console.log(error.message)
-          })
-      }).catch((error) => {
-        setSpinner(false)
-        console.log(error)
-      })
+        return
+      }
+      
+      // Sign out after successful deletion
+      const { error: signOutError } = await supabase.auth.signOut()
+      if (signOutError) {
+        console.log(signOutError.message)
+      }
+      
+      setSpinner(false)
+      console.log('user deleted')
     } catch (error) {
       console.log(error)
+      setSpinner(false)
     }
   }
 
@@ -87,13 +109,13 @@ export default function Profile() {
           <Avatar
             size="large"
             rounded
-            source={{ uri: userData.avatar }}
+            source={{ uri: userData.avatar_url || userData.avatar }}
           />
         </View>
         <View style={styles.infoContainer}>
           <Text style={[styles.fieldLabel, { color: colorScheme.text }]}>Name:</Text>
           <BlurView intensity={55} tint="regular" style={styles.textBackground}>
-            <Text style={[styles.fieldValue, styles.timesFont, { color: colorScheme.text }]}>{userData.fullName}</Text>
+            <Text style={[styles.fieldValue, styles.timesFont, { color: colorScheme.text }]}>{userData.full_name || userData.fullName}</Text>
           </BlurView>
           <Text style={[styles.fieldLabel, { color: colorScheme.text }]}>Mail:</Text>
           <BlurView intensity={55} tint="regular" style={styles.textBackground}>

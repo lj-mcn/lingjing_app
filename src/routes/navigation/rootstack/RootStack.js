@@ -2,14 +2,13 @@ import React, { useState, useContext, useEffect } from 'react'
 import { Platform } from 'react-native'
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack'
 import * as Notifications from 'expo-notifications'
-import { setDoc, doc } from 'firebase/firestore'
 import * as Device from 'expo-device'
 import TabNavigator from '../tabs/Tabs'
 import { ModalStacks } from '../stacks/ModalStacks/ModalStacks'
 import VideoPlayer from '../../../scenes/video'
 import MusicSettings from '../../../scenes/musicSettings'
 import BlindBoxVideo from '../../../scenes/blindBox'
-import { firestore } from '../../../firebase/config'
+import { supabase } from '../../../../lib/supabase'
 import { UserDataContext } from '../../../context/UserDataContext'
 import { useAppFlow } from '../../../context/AppFlowContext'
 import { expoProjectId } from '../../../config'
@@ -48,11 +47,18 @@ export default function RootStack() {
       const token = await Notifications.getExpoPushTokenAsync({
         projectId: expoProjectId,
       })
-      const tokensRef = doc(firestore, 'tokens', userData.id)
-      await setDoc(tokensRef, {
-        token: token.data,
-        id: userData.id,
-      })
+      
+      // Save token to Supabase
+      const { error } = await supabase
+        .from('tokens')
+        .upsert({
+          token: token.data,
+          id: userData.id,
+        })
+      
+      if (error) {
+        console.error('Error saving push token:', error)
+      }
     })()
   }, [userData])
 
