@@ -11,8 +11,8 @@ import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
 import Button from '../../components/Button'
 // import ConfigTester from '../../components/ConfigTester'
-import digitalHumanService from '../../services/DigitalHumanService'
-import responseLLMService from '../../services/ResponseLLMService'
+import digitalAssistant from '../../services/assistant/DigitalAssistant'
+import chatService from '../../services/chat/ChatService'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
 import { UserDataContext } from '../../context/UserDataContext'
@@ -98,7 +98,7 @@ export default function TextChat() {
   // 更新记忆状态
   useEffect(() => {
     const updateMemoryStats = () => {
-      const stats = responseLLMService.getMemoryStats()
+      const stats = chatService.getMemoryStats()
       setMemoryStats(stats)
     }
 
@@ -333,7 +333,7 @@ export default function TextChat() {
 
     try {
       // 发送文本消息给数字人
-      const result = await digitalHumanService.sendTextMessage(userMessage)
+      const result = await digitalAssistant.sendTextMessage(userMessage)
       if (!result.success) {
         console.error('发送消息失败:', result.error)
         // Alert.alert('错误', `发送消息失败: ${result.error}`)
@@ -378,7 +378,7 @@ export default function TextChat() {
     console.log('Clear messages requested - current messages count:', messages.length)
     // 直接清空
     setMessages([])
-    responseLLMService.clearMemory()
+    chatService.clearMemory()
     console.log('Messages cleared - new count should be 0')
   }
 

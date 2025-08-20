@@ -3,7 +3,7 @@
  * 基于 111.py 中的 ChatMemory 类实现
  * 用于管理和维护对话历史记录，提供上下文连续性
  */
-class ChatMemoryService {
+class ConversationMemory {
   constructor(maxLength = 2048) {
     this.history = []
     this.maxLength = maxLength // 最大输入长度
@@ -161,6 +161,6 @@ class ChatMemoryService {
 }
 
 // 创建单例实例
-const chatMemoryService = new ChatMemoryService(512) // 与 111.py 保持一致，设置为 512
+const conversationMemory = new ConversationMemory(512) // 与 111.py 保持一致，设置为 512
 
-export default chatMemoryService
+export default conversationMemory

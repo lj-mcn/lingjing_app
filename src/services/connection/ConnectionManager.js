@@ -1,6 +1,6 @@
 import { Audio } from 'expo-av'
 
-class WebSocketService {
+class ConnectionManager {
   constructor() {
     this.ws = null
     this.reconnectAttempts = 0
@@ -284,5 +284,5 @@ class WebSocketService {
 }
 
 // 创建单例实例
-const webSocketService = new WebSocketService()
-export default webSocketService
+const connectionManager = new ConnectionManager()
+export default connectionManager

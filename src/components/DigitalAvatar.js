@@ -8,7 +8,7 @@ import { Video } from 'expo-av'
 import { LinearGradient } from 'expo-linear-gradient'
 import { BlurView } from 'expo-blur'
 import { ColorSchemeContext } from '../context/ColorSchemeContext'
-import digitalHumanService from '../services/DigitalHumanService'
+import digitalAssistant from '../services/assistant/DigitalAssistant'
 
 // 禁用Video组件的错误弹窗
 const DISABLE_VIDEO_ALERTS = true
@@ -73,11 +73,11 @@ export default function DigitalAvatar({
       console.log('开始初始化数字人...')
 
       // 导入配置
-      const llmConfig = await import('../config/llmConfig.js').then((m) => m.default)
+      const appConfig = await import('../config/AppConfig.js').then((m) => m.default)
       console.log('LLM配置加载完成')
 
       // 验证配置
-      const configValidation = llmConfig.validateConfig()
+      const configValidation = appConfig.validateConfig()
       console.log('配置验证结果:', configValidation)
 
       if (!configValidation.isValid) {
@@ -93,20 +93,20 @@ export default function DigitalAvatar({
       // 配置数字人服务（使用我们自己的LLM）
       const config = {
         llm: {
-          websocket_url: llmConfig.responseLLM.websocket_url,
-          timeout: llmConfig.responseLLM.timeout,
-          max_tokens: llmConfig.responseLLM.max_tokens,
-          model: llmConfig.responseLLM.model,
+          websocket_url: appConfig.responseLLM.websocket_url,
+          timeout: appConfig.responseLLM.timeout,
+          max_tokens: appConfig.responseLLM.max_tokens,
+          model: appConfig.responseLLM.model,
         },
-        websocket_url: llmConfig.responseLLM.websocket_url, // 添加顶级websocket_url
+        websocket_url: appConfig.responseLLM.websocket_url, // 添加顶级websocket_url
         sttTts: {},
       }
 
-      console.log('环境配置:', llmConfig.getEnvironmentConfig())
+      console.log('环境配置:', appConfig.getEnvironmentConfig())
       console.log('初始化配置:', config)
 
-      console.log('开始调用digitalHumanService.initialize...')
-      const initialized = await digitalHumanService.initialize(config)
+      console.log('开始调用digitalAssistant.initialize...')
+      const initialized = await digitalAssistant.initialize(config)
       console.log('初始化结果:', initialized)
 
       if (initialized) {
@@ -114,7 +114,7 @@ export default function DigitalAvatar({
         setIsInitialized(true)
 
         // 设置回调函数
-        digitalHumanService.setCallbacks({
+        digitalAssistant.setCallbacks({
           onStatusChange: (newStatus) => {
             setStatus(newStatus)
           },
@@ -147,7 +147,7 @@ export default function DigitalAvatar({
     if (status === 'idle') {
       // 开始语音对话
       console.log('🎙️ 用户点击开始语音对话')
-      const result = await digitalHumanService.startVoiceConversation()
+      const result = await digitalAssistant.startVoiceConversation()
       if (result.success) {
         console.log(`✅ 语音对话已开始: ${result.message}`)
       } else {
@@ -156,7 +156,7 @@ export default function DigitalAvatar({
     } else if (status === 'recording') {
       // 结束录音并处理
       console.log('🛑 用户点击停止录音')
-      const processed = await digitalHumanService.stopVoiceConversation()
+      const processed = await digitalAssistant.stopVoiceConversation()
       if (processed) {
         console.log('✅ 语音对话处理完成')
       } else {

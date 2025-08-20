@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import Button from '../../components/Button'
 import DigitalAvatar from '../../components/DigitalAvatar'
-import digitalHumanService from '../../services/DigitalHumanService'
+import digitalAssistant from '../../services/assistant/DigitalAssistant'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
 import { UserDataContext } from '../../context/UserDataContext'
 
@@ -40,7 +40,7 @@ export default function Follow() {
     setInputText('')
 
     // 发送文本消息
-    const result = await digitalHumanService.sendTextMessage(userMessage)
+    const result = await digitalAssistant.sendTextMessage(userMessage)
     if (!result.success) {
       console.error('发送消息失败:', result.error)
     }

@@ -12,7 +12,11 @@
       "Bash(git commit:*)",
       "Bash(npm install:*)",
       "Bash(npx expo:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(true)"
     ],
     "deny": [],
     "ask": []

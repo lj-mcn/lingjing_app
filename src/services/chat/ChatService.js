@@ -1,14 +1,14 @@
-import webSocketService from './WebSocketService'
-import llmConfig from '../config/llmConfig'
-import chatMemoryService from './ChatMemoryService'
+import connectionManager from '../connection/ConnectionManager'
+import appConfig from '../../config/AppConfig'
+import conversationMemory from './ConversationMemory'
 
-class ResponseLLMService {
+class ChatService {
   constructor() {
     this.isInitialized = false
     this.modelConfig = {
-      endpoint: llmConfig.responseLLM.websocket_url,
-      timeout: llmConfig.responseLLM.timeout,
-      max_tokens: llmConfig.responseLLM.max_tokens,
+      endpoint: appConfig.responseLLM.websocket_url,
+      timeout: appConfig.responseLLM.timeout,
+      max_tokens: appConfig.responseLLM.max_tokens,
     }
     this.requestId = 0
     this.pendingRequests = new Map()
@@ -20,22 +20,22 @@ class ResponseLLMService {
       this.modelConfig = { ...this.modelConfig, ...config }
 
       // 设置WebSocket消息处理
-      webSocketService.setOnMessage((data) => {
+      connectionManager.setOnMessage((data) => {
         this.handleWebSocketMessage(data)
       })
 
       // 设置WebSocket连接状态监听
-      webSocketService.setOnConnect(() => {
-        console.log('✅ LLM WebSocket连接成功')
+      connectionManager.setOnConnect(() => {
+        console.log('✅ 聊天服务连接成功')
       })
 
-      webSocketService.setOnDisconnect(() => {
-        console.log('⚠️ LLM WebSocket断开连接，尝试重连...')
+      connectionManager.setOnDisconnect(() => {
+        console.log('⚠️ 聊天服务断开连接，尝试重连...')
         this.handleDisconnection()
       })
 
-      webSocketService.setOnError((error) => {
-        console.error('❌ LLM WebSocket错误:', error)
+      connectionManager.setOnError((error) => {
+        console.error('❌ 聊天服务错误:', error)
         this.handleConnectionError(error)
       })
 
@@ -65,13 +65,13 @@ class ResponseLLMService {
     console.log(`Connecting to primary LLM server at ${primaryServer}`)
 
     try {
-      webSocketService.connect(primaryServer)
+      connectionManager.connect(primaryServer)
       console.log('WebSocket connection initiated to primary server')
 
       // 给主服务器更多时间连接，并定期检查状态
       for (let i = 0; i < 10; i++) { // 检查10次，每次500ms，总共5秒
         await new Promise((resolve) => setTimeout(resolve, 500))
-        if (webSocketService.isConnected()) {
+        if (connectionManager.isConnected()) {
           console.log('✅ Primary server connected successfully')
           return true
         }
@@ -84,18 +84,18 @@ class ResponseLLMService {
     }
 
     // 如果主服务器失败，尝试备用服务器
-    if (llmConfig.responseLLM.fallbackServers && llmConfig.responseLLM.fallbackServers.length > 0) {
+    if (appConfig.responseLLM.fallbackServers && appConfig.responseLLM.fallbackServers.length > 0) {
       console.log('🔄 Trying fallback servers...')
 
-      for (const fallbackUrl of llmConfig.responseLLM.fallbackServers) {
+      for (const fallbackUrl of appConfig.responseLLM.fallbackServers) {
         console.log(`Trying fallback server: ${fallbackUrl}`)
         try {
-          webSocketService.connect(fallbackUrl)
+          connectionManager.connect(fallbackUrl)
 
           // 给备用服务器时间连接
           for (let i = 0; i < 8; i++) { // 检查8次，每次500ms，总共4秒
             await new Promise((resolve) => setTimeout(resolve, 500))
-            if (webSocketService.isConnected()) {
+            if (connectionManager.isConnected()) {
               console.log(`✅ Connected to fallback server: ${fallbackUrl}`)
               // 更新当前端点为成功的备用服务器
               this.modelConfig.endpoint = fallbackUrl
@@ -137,7 +137,7 @@ class ResponseLLMService {
       })
 
       // 获取记忆中的对话上下文
-      const memoryContext = chatMemoryService.getContext()
+      const memoryContext = conversationMemory.getContext()
 
       // 构建包含历史记忆的提示词
       let fullPrompt = userInput
@@ -152,12 +152,12 @@ class ResponseLLMService {
           prompt: fullPrompt,
           conversation_history: conversationHistory,
           max_tokens: this.modelConfig.max_tokens,
-          system_prompt: llmConfig.gabalong.system_prompt,
+          system_prompt: appConfig.gabalong.system_prompt,
         },
         timestamp: Date.now(),
       }
 
-      const sent = webSocketService.send(requestData)
+      const sent = connectionManager.send(requestData)
       if (!sent) {
         clearTimeout(timeoutId)
         this.pendingRequests.delete(requestId)
@@ -176,9 +176,9 @@ class ResponseLLMService {
         if (data.success) {
           // 存储用户输入和助手回复到记忆中
           if (request.userInput && data.message) {
-            chatMemoryService.addToHistory(request.userInput, data.message)
+            conversationMemory.addToHistory(request.userInput, data.message)
             // 自动管理历史记录长度
-            chatMemoryService.autoManageHistory()
+            conversationMemory.autoManageHistory()
           }
 
           request.resolve({
@@ -216,13 +216,13 @@ class ResponseLLMService {
 
       console.log('📤 发送消息到大模型:', text.substring(0, 50) + (text.length > 50 ? '...' : ''))
 
-      if (!webSocketService.isConnected()) {
+      if (!connectionManager.isConnected()) {
         console.log('🔄 WebSocket未连接，尝试重新连接...')
         try {
           await this.connectToLLMServer()
           // 等待连接建立
           await new Promise((resolve) => setTimeout(resolve, 2000))
-          if (!webSocketService.isConnected()) {
+          if (!connectionManager.isConnected()) {
             throw new Error(`无法连接到大模型服务器 (${this.modelConfig.endpoint})，请检查:\n• 服务器是否正在运行\n• 网络连接是否正常\n• 防火墙设置`)
           }
           console.log('✅ 重新连接成功')
@@ -268,13 +268,13 @@ class ResponseLLMService {
   }
 
   isReady() {
-    return this.isInitialized && webSocketService.isConnected()
+    return this.isInitialized && connectionManager.isConnected()
   }
 
   getStatus() {
     return {
       initialized: this.isInitialized,
-      websocketConnected: webSocketService.isConnected(),
+      websocketConnected: connectionManager.isConnected(),
       pendingRequests: this.pendingRequests.size,
       modelConfig: this.modelConfig,
     }
@@ -303,7 +303,7 @@ class ResponseLLMService {
           console.error('Reconnection failed:', error)
         })
       }
-    }, llmConfig.responseLLM.reconnectDelay)
+    }, appConfig.responseLLM.reconnectDelay)
   }
 
   handleConnectionError(error) {
@@ -329,7 +329,7 @@ class ResponseLLMService {
    * @returns {string} 对话上下文
    */
   getMemoryContext() {
-    return chatMemoryService.getContext()
+    return conversationMemory.getContext()
   }
 
   /**
@@ -337,14 +337,14 @@ class ResponseLLMService {
    * @returns {Array} 格式化的对话数组
    */
   getConversationHistory() {
-    return chatMemoryService.getFormattedHistory()
+    return conversationMemory.getFormattedHistory()
   }
 
   /**
    * 清空对话记忆
    */
   clearMemory() {
-    chatMemoryService.clearHistory()
+    conversationMemory.clearHistory()
     console.log('对话记忆已清空')
   }
 
@@ -354,10 +354,10 @@ class ResponseLLMService {
    */
   getMemoryStats() {
     return {
-      historyLength: chatMemoryService.getHistoryLength(),
-      turnCount: chatMemoryService.getTurnCount(),
-      hasHistory: chatMemoryService.hasHistory(),
-      maxLength: chatMemoryService.getMaxLength(),
+      historyLength: conversationMemory.getHistoryLength(),
+      turnCount: conversationMemory.getTurnCount(),
+      hasHistory: conversationMemory.hasHistory(),
+      maxLength: conversationMemory.getMaxLength(),
     }
   }
 
@@ -366,7 +366,7 @@ class ResponseLLMService {
    * @param {number} maxLength - 最大长度
    */
   setMemoryMaxLength(maxLength) {
-    chatMemoryService.setMaxLength(maxLength)
+    conversationMemory.setMaxLength(maxLength)
     console.log(`记忆最大长度已设置为: ${maxLength}`)
   }
 
@@ -375,7 +375,7 @@ class ResponseLLMService {
    * @returns {Object} 记忆数据
    */
   exportMemory() {
-    return chatMemoryService.export()
+    return conversationMemory.export()
   }
 
   /**
@@ -383,7 +383,7 @@ class ResponseLLMService {
    * @param {Object} memoryData - 记忆数据
    */
   importMemory(memoryData) {
-    chatMemoryService.import(memoryData)
+    conversationMemory.import(memoryData)
     console.log('记忆数据已导入')
   }
 
@@ -394,5 +394,5 @@ class ResponseLLMService {
   }
 }
 
-const responseLLMService = new ResponseLLMService()
-export default responseLLMService
+const chatService = new ChatService()
+export default chatService

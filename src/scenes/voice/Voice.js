@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
 // import ConfigTester from '../../components/ConfigTester'
-import digitalHumanService from '../../services/DigitalHumanService'
+import digitalAssistant from '../../services/assistant/DigitalAssistant'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
 import { UserDataContext } from '../../context/UserDataContext'
@@ -76,7 +76,7 @@ export default function Voice() {
 
   const startVoiceRecording = async () => {
     setIsListening(true)
-    const result = await digitalHumanService.startVoiceRecording()
+    const result = await digitalAssistant.startVoiceRecording()
     if (!result.success) {
       console.error('无法启动语音录制:', result.error)
       // Alert.alert('错误', `无法启动语音录制: ${result.error}`)
@@ -86,7 +86,7 @@ export default function Voice() {
 
   const stopVoiceRecording = async () => {
     setIsListening(false)
-    const result = await digitalHumanService.stopVoiceRecording()
+    const result = await digitalAssistant.stopVoiceRecording()
     if (!result.success) {
       console.error('语音处理失败:', result.error)
       // Alert.alert('错误', `语音处理失败: ${result.error}`)
@@ -97,7 +97,7 @@ export default function Voice() {
   // 切换智能对话模式
   const toggleSmartConversationMode = async () => {
     if (smartConversationMode) {
-      const result = await digitalHumanService.stopSmartConversation()
+      const result = await digitalAssistant.stopSmartConversation()
       if (result.success) {
         setSmartConversationMode(false)
         setIsListening(false)
@@ -108,7 +108,7 @@ export default function Voice() {
         setChatStarted(true)
       }
 
-      const result = await digitalHumanService.startSmartConversation()
+      const result = await digitalAssistant.startSmartConversation()
       if (result.success) {
         setSmartConversationMode(true)
         setIsListening(true)
@@ -119,7 +119,7 @@ export default function Voice() {
 
   // 监听数字人服务状态变化
   useEffect(() => {
-    digitalHumanService.setCallbacks({
+    digitalAssistant.setCallbacks({
       onStatusChange: (status) => {
         if (status === 'listening') {
           setVadState('listening')
@@ -140,7 +140,7 @@ export default function Voice() {
     return () => {
       // 如果组件卸载时还有活跃的对话模式，进行清理
       if (smartConversationMode) {
-        digitalHumanService.stopSmartConversation()
+        digitalAssistant.stopSmartConversation()
       }
     }
   }, [smartConversationMode])

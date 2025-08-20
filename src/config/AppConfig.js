@@ -1,23 +1,5 @@
-// 大模型相关配置 (使用我们自己的LLM)
-const llmConfig = {
-  // OpenAI配置 (保留结构，但不使用)
-  openai: {
-    apiKey: '', // 不使用
-    baseURL: 'https://api.openai.com/v1',
-    models: {
-      chat: 'gpt-3.5-turbo',
-      stt: 'whisper-1',
-      tts: 'tts-1',
-    },
-    ttsVoices: {
-      alloy: 'alloy',
-      echo: 'echo',
-      fable: 'fable',
-      onyx: 'onyx',
-      nova: 'nova',
-      shimmer: 'shimmer',
-    },
-  },
+// 应用配置 - 数字助手系统配置
+const appConfig = {
 
   // WebSocket配置
   websocket: {
@@ -95,29 +77,14 @@ const llmConfig = {
     mockResponseDelay: 1000, // 模拟响应延迟（毫秒）
   },
 
-  // 配置验证 (仅使用我们自己的LLM)
+  // 配置验证
   validateConfig() {
     const errors = []
     const warnings = []
 
-    // 检查自己的LLM配置
+    // 检查Qwen LLM配置
     if (!this.responseLLM.websocket_url) {
       errors.push('缺少LLM服务器地址 - 请设置LLM_SERVER_URL环境变量')
-    }
-
-    // 检查网络连通性提示
-    if (this.responseLLM.websocket_url) {
-      const url = this.responseLLM.websocket_url
-      // 更精确的私有IP地址检测
-      const isPrivateIP = url.includes('192.168.')
-                         || url.includes('10.')
-                         || /172\.(1[6-9]|2[0-9]|3[01])\./.test(url)
-                         || url.includes('127.0.0.1')
-                         || url.includes('localhost')
-
-      if (isPrivateIP) {
-        warnings.push('使用内网IP地址，请确保两台电脑在同一网络中')
-      }
     }
 
     return {
@@ -130,7 +97,7 @@ const llmConfig = {
   // 获取当前环境配置
   getEnvironmentConfig() {
     return {
-      // 我们自己的LLM配置
+      // Qwen LLM配置
       llmServer: {
         serverUrl: this.responseLLM.websocket_url,
         isConfigured: !!this.responseLLM.websocket_url,
@@ -161,61 +128,34 @@ const llmConfig = {
     },
   },
 
-  // STT/TTS服务配置
+  // STT/TTS服务配置 - Kokoro TTS + SenseVoice-small
   sttTts: {
-    // 服务提供商选择: auto, openai, azure, expo, web, simulation
-    provider: 'auto', // 自动选择：Google STT + Expo TTS
-
-    // OpenAI配置
-    openai: {
-      apiKey: process.env.OPENAI_API_KEY || '', // 从环境变量读取，或在此直接填写你的OpenAI API密钥
-      sttModel: 'whisper-1',
-      ttsModel: 'tts-1',
-      voice: 'alloy', // alloy, echo, fable, onyx, nova, shimmer
-      enabled: false, // 有API密钥时自动启用
-    },
-
-    // Azure语音服务配置
-    azure: {
-      subscriptionKey: '', // 留空则不使用Azure
-      region: 'eastus', // 服务区域
-      language: 'zh-CN',
-      voice: 'zh-CN-XiaoxiaoNeural', // 中文女声
-      enabled: false,
-    },
-
-    // Google Cloud语音服务配置
-    google: {
-      apiKey: 'AIzaSyBCVXaEQqhtahcNZ9QNcDjE4y20pk94YDc', // Google Cloud STT API密钥
-      sttLanguage: 'zh-CN', // 语音识别语言
-      ttsLanguage: 'zh-CN', // 语音合成语言
-      sttModel: 'default', // STT模型 (default支持中文)
-      ttsVoice: 'zh-CN-Standard-A', // TTS语音
+    provider: 'voice_service', // 使用统一语音服务
+    
+    // 语音服务配置
+    voice_service: {
       enabled: true,
-    },
-
-    // Expo Speech配置 (本地TTS)
-    expo: {
-      language: 'zh-CN',
-      pitch: 1.0,
-      rate: 0.9,
-      enabled: true,
-    },
-
-    // Web Speech API配置
-    web: {
-      language: 'zh-CN',
-      rate: 0.9,
-      pitch: 1.0,
-      enabled: true, // 自动检测平台支持
-    },
-
-    // 降级策略
-    fallback: {
-      enableSimulation: false, // 当所有服务不可用时是否启用模拟模式
-      showWarnings: true, // 是否显示服务不可用警告
+      websocket_url: process.env.VOICE_SERVICE_URL || 'ws://192.168.18.138:8001',
+      timeout: 30000,
+      reconnectAttempts: 3,
+      reconnectDelay: 2000,
+      
+      // TTS配置
+      tts: {
+        model: 'kokoro-v0_19',
+        voice_style: 'default', // 可配置声音风格
+        format: 'wav',
+      },
+      
+      // STT配置
+      stt: {
+        model: 'sensevoice-small',
+        language: 'zh',
+        enable_itn: true, // 数字规范化
+      },
+      
     },
   },
 }
 
-export default llmConfig
+export default appConfig

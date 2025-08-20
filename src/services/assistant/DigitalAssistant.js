@@ -1,11 +1,11 @@
 import webSocketService from './WebSocketService'
 import audioService from './AudioService'
-import responseLLMService from './ResponseLLMService'
+import chatService from '../chat/ChatService'
 import sttTtsService from './STTTTSService'
 import senceVoiceService from './SenceVoiceService'
 import llmConfig from '../config/llmConfig'
 
-class DigitalHumanService {
+class DigitalAssistant {
   constructor() {
     this.isConnected = false
     this.isConversing = false
@@ -756,12 +756,12 @@ class DigitalHumanService {
       // 配置各个服务
       console.log('初始化ResponseLLM服务...')
       if (config.llm) {
-        const llmInitialized = await responseLLMService.initialize(config.llm)
+        const llmInitialized = await chatService.initialize(config.llm)
         if (!llmInitialized) {
           console.warn('ResponseLLM服务初始化失败，但继续初始化其他服务')
         }
       } else {
-        const llmInitialized = await responseLLMService.initialize()
+        const llmInitialized = await chatService.initialize()
         if (!llmInitialized) {
           console.warn('ResponseLLM服务初始化失败，但继续初始化其他服务')
         }
@@ -942,7 +942,7 @@ class DigitalHumanService {
       this.notifyMessage('user', sttResult.text)
 
       // 发送给大模型
-      const llmResult = await responseLLMService.sendMessage(sttResult.text)
+      const llmResult = await chatService.sendMessage(sttResult.text)
       if (!llmResult.success) {
         throw new Error(`大模型响应失败: ${llmResult.error}`)
       }
@@ -1027,7 +1027,7 @@ class DigitalHumanService {
       this.notifyMessage('user', text)
 
       // 发送给大模型
-      const llmResult = await responseLLMService.sendMessage(text)
+      const llmResult = await chatService.sendMessage(text)
       if (!llmResult.success) {
         throw new Error(`大模型响应失败: ${llmResult.error}`)
       }
@@ -1321,8 +1321,8 @@ class DigitalHumanService {
       await audioService.cleanup()
       webSocketService.disconnect()
       
-      if (responseLLMService && typeof responseLLMService.cleanup === 'function') {
-        responseLLMService.cleanup()
+      if (chatService && typeof chatService.cleanup === 'function') {
+        chatService.cleanup()
       }
 
       if (this.useSenceVoice && senceVoiceService && typeof senceVoiceService.cleanup === 'function') {
@@ -1337,5 +1337,5 @@ class DigitalHumanService {
 }
 
 // 创建单例实例
-const digitalHumanService = new DigitalHumanService()
-export default digitalHumanService
+const digitalAssistant = new DigitalAssistant()
+export default digitalAssistant
