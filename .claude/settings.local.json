@@ -12,7 +12,8 @@
       "Bash(git commit:*)",
       "Bash(npm install:*)",
       "Bash(npx expo:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
