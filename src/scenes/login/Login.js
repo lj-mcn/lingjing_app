@@ -54,9 +54,9 @@ export default function Login() {
     try {
       setSpinner(true)
       console.log('Sending OTP to email:', email)
-      
+
       const { error } = await supabase.auth.signInWithOtp({
-        email: email,
+        email,
       })
 
       if (error) {
@@ -89,10 +89,10 @@ export default function Login() {
     try {
       setSpinner(true)
       console.log('Attempting to sign in user:', email)
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
+        email,
+        password,
       })
 
       if (error) {
@@ -119,7 +119,7 @@ export default function Login() {
         full_name: data.user.user_metadata?.full_name || '',
         avatar_url: data.user.user_metadata?.avatar_url || '',
       }
-      
+
       console.log('Login successful, user data:', userData)
       setUserData(userData)
       setLoggedIn(true)
@@ -160,7 +160,7 @@ export default function Login() {
   if (showVerification) {
     return (
       <ScreenTemplate>
-        <EmailVerification 
+        <EmailVerification
           email={unverifiedEmail}
           onVerificationComplete={onVerificationComplete}
         />
@@ -197,12 +197,12 @@ export default function Login() {
           />
         )}
         <Button
-          label={useOtpLogin ? "发送验证码" : "登录"}
+          label={useOtpLogin ? '发送验证码' : '登录'}
           color={colors.primary}
           onPress={() => onLoginPress()}
         />
         <Button
-          label={useOtpLogin ? "使用密码登录" : "使用验证码登录"}
+          label={useOtpLogin ? '使用密码登录' : '使用验证码登录'}
           color={colors.blueLight}
           onPress={() => setUseOtpLogin(!useOtpLogin)}
         />

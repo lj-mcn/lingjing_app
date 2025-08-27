@@ -1,12 +1,16 @@
 import React, { useState, useContext } from 'react'
-import { View, Text, StyleSheet, Alert } from 'react-native'
+import {
+  View, Text, StyleSheet, Alert,
+} from 'react-native'
 import { supabase } from '../../lib/supabase'
 import Button from './Button'
 import TextInputBox from './TextInputBox'
 import { colors, fontSize } from '../theme'
 import { ColorSchemeContext } from '../context/ColorSchemeContext'
 
-export default function EmailVerification({ email, isRegistration = false, registrationData = null, onVerificationComplete }) {
+export default function EmailVerification({
+  email, isRegistration = false, registrationData = null, onVerificationComplete,
+}) {
   const [verificationCode, setVerificationCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
@@ -25,12 +29,12 @@ export default function EmailVerification({ email, isRegistration = false, regis
     try {
       setLoading(true)
       console.log('Verifying OTP:', { email, token: verificationCode, isRegistration })
-      
+
       // Verify OTP - for signInWithOtp, always use 'email' type
       const { data, error } = await supabase.auth.verifyOtp({
-        email: email,
+        email,
         token: verificationCode,
-        type: 'email'
+        type: 'email',
       })
 
       if (error) {
@@ -64,9 +68,9 @@ export default function EmailVerification({ email, isRegistration = false, regis
         // Set password if provided
         if (registrationData.password) {
           const { error: passwordError } = await supabase.auth.updateUser({
-            password: registrationData.password
+            password: registrationData.password,
           })
-          
+
           if (passwordError) {
             console.error('Error setting password:', passwordError)
           }
@@ -85,18 +89,18 @@ export default function EmailVerification({ email, isRegistration = false, regis
   const resendVerification = async () => {
     try {
       setResendLoading(true)
-      
+
       if (isRegistration) {
         // For registration, resend with registration data
         const { error } = await supabase.auth.signInWithOtp({
-          email: email,
+          email,
           options: registrationData ? {
             data: {
               full_name: registrationData.fullName,
               avatar_url: registrationData.defaultAvatar,
               password: registrationData.password,
-            }
-          } : undefined
+            },
+          } : undefined,
         })
 
         if (error) {
@@ -106,7 +110,7 @@ export default function EmailVerification({ email, isRegistration = false, regis
       } else {
         // For login, just resend OTP
         const { error } = await supabase.auth.signInWithOtp({
-          email: email,
+          email,
         })
 
         if (error) {
@@ -129,7 +133,7 @@ export default function EmailVerification({ email, isRegistration = false, regis
       <Text style={[styles.description, { color: colorScheme.text }]}>
         我们已向 {email} 发送了6位数字验证码，请检查您的邮箱并输入验证码。
       </Text>
-      
+
       <TextInputBox
         placeholder="请输入6位验证码"
         value={verificationCode}
@@ -138,16 +142,16 @@ export default function EmailVerification({ email, isRegistration = false, regis
         autoCapitalize="none"
         maxLength={6}
       />
-      
+
       <Button
-        label={loading ? "验证中..." : "验证"}
+        label={loading ? '验证中...' : '验证'}
         color={colors.primary}
         onPress={verifyEmail}
         disable={loading || !verificationCode.trim()}
       />
-      
+
       <Button
-        label={resendLoading ? "发送中..." : "重新发送验证码"}
+        label={resendLoading ? '发送中...' : '重新发送验证码'}
         color={colors.blueLight}
         onPress={resendVerification}
         disable={resendLoading}

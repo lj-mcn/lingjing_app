@@ -207,7 +207,7 @@ export default function VideoPlayer() {
             }}
           />
           {showSkipButton && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.skipButton}
               onPress={handleSkipVideo}
             >

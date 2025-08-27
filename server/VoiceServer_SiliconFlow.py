@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-统一语音服务器 - 集成Kokoro TTS + SenseVoice-small
+统一语音服务器 - 集成SiliconFlow CosyVoice API + SenseVoice-small
 作为App与大模型的后端语音处理服务
 """
 
@@ -16,6 +16,7 @@ import torch
 from typing import Dict, Any, Optional
 from pathlib import Path
 import argparse
+from siliconflow_tts import SiliconFlowTTS
 
 # 配置日志
 logging.basicConfig(
@@ -29,24 +30,26 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class VoiceServiceProcessor:
-    """语音服务处理器 - 集成TTS和STT"""
+    """语音服务处理器 - 集成SiliconFlow TTS和STT"""
     
     def __init__(self):
-        self.kokoro_tts = None
+        self.siliconflow_tts = None
         self.sensevoice_stt = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.available_speakers = []
+        self.use_cloud_api = True  # 使用云端API
         self.is_initialized = False
         
-    async def initialize(self, kokoro_path=None, sensevoice_path=None):
+    async def initialize(self, api_key=None):
         """初始化模型"""
         try:
             logger.info("🚀 初始化语音服务...")
             
-            # 初始化Kokoro TTS
-            await self.init_kokoro_tts(kokoro_path)
+            # 初始化SiliconFlow CosyVoice TTS
+            await self.init_siliconflow_tts(api_key)
             
             # 初始化SenseVoice STT
-            await self.init_sensevoice_stt(sensevoice_path)
+            await self.init_sensevoice_stt()
             
             self.is_initialized = True
             logger.info("✅ 语音服务初始化完成")
@@ -56,29 +59,44 @@ class VoiceServiceProcessor:
             logger.error(f"❌ 语音服务初始化失败: {e}")
             return False
     
-    async def init_kokoro_tts(self, model_path=None):
-        """初始化Kokoro TTS模型"""
+    async def init_siliconflow_tts(self, api_key=None):
+        """初始化SiliconFlow CosyVoice TTS API"""
         try:
-            logger.info("📢 正在加载Kokoro TTS模型...")
+            logger.info("📢 正在初始化SiliconFlow CosyVoice API...")
             
-            # 这里需要根据Kokoro TTS的实际API进行调整
-            # 示例代码框架：
-            """
-            from kokoro_tts import KokoroTTS
+            # 初始化SiliconFlow TTS客户端
+            if not api_key:
+                api_key = os.getenv('SILICONFLOW_API_KEY')
+                if not api_key:
+                    logger.warning("⚠️ 未找到SILICONFLOW_API_KEY环境变量")
+                    logger.info("📝 使用环境变量: export SILICONFLOW_API_KEY=your_api_key")
             
-            self.kokoro_tts = KokoroTTS(
-                model_path=model_path or "kokoro-v0_19",
-                device=self.device
-            )
-            await self.kokoro_tts.load()
-            """
+            self.siliconflow_tts = SiliconFlowTTS(api_key)
             
-            # 临时模拟初始化
-            self.kokoro_tts = {"model_name": "kokoro-v0_19", "status": "loaded"}
-            logger.info("✅ Kokoro TTS模型加载成功")
+            # 从SiliconFlow客户端获取可用语音
+            if self.siliconflow_tts:
+                voices_info = await self.siliconflow_tts.get_voices()
+                self.available_speakers = voices_info.get("voices", [])
+            else:
+                self.available_speakers = [
+                    "中文女", "中文男", "英文女", "英文男",
+                    "日语女", "韩语女", "粤语女", "四川话女"
+                ]
+            
+            # 测试API连接（可选）
+            if api_key:
+                logger.info("🔍 正在测试SiliconFlow API连接...")
+                # 可以启用这行来测试连接
+                # connection_ok = await self.siliconflow_tts.test_connection()
+                # if connection_ok:
+                #     logger.info("✅ SiliconFlow API连接正常")
+                # else:
+                #     logger.warning("⚠️ SiliconFlow API连接失败")
+            
+            logger.info("✅ SiliconFlow CosyVoice API初始化成功")
             
         except Exception as e:
-            logger.error(f"❌ Kokoro TTS加载失败: {e}")
+            logger.error(f"❌ SiliconFlow TTS初始化失败: {e}")
             raise
     
     async def init_sensevoice_stt(self, model_path=None):
@@ -106,40 +124,46 @@ class VoiceServiceProcessor:
             logger.error(f"❌ SenseVoice STT加载失败: {e}")
             raise
     
-    async def text_to_speech(self, text: str, voice_style: str = "default") -> Dict[str, Any]:
-        """文本转语音 - 使用Kokoro TTS"""
+    async def text_to_speech(self, text: str, voice_style: str = "中文女", speaker_name: str = None) -> Dict[str, Any]:
+        """文本转语音 - 使用SiliconFlow CosyVoice API"""
         try:
-            if not self.is_initialized or not self.kokoro_tts:
-                raise Exception("Kokoro TTS未初始化")
+            if not self.is_initialized or not self.siliconflow_tts:
+                raise Exception("SiliconFlow TTS未初始化")
             
-            logger.info(f"🔊 TTS请求: {text[:50]}...")
+            logger.info(f"🔊 SiliconFlow CosyVoice TTS请求: {text[:50]}...")
             
-            # 这里调用实际的Kokoro TTS API
-            # 示例代码：
-            """
-            audio_data = await self.kokoro_tts.generate(
+            # 选择语音
+            selected_voice = speaker_name if speaker_name in self.available_speakers else voice_style
+            if selected_voice not in self.available_speakers:
+                selected_voice = "中文女"  # 默认语音
+            
+            # 调用SiliconFlow API
+            result = await self.siliconflow_tts.text_to_speech(
                 text=text,
-                voice=voice_style,
-                speed=1.0,
-                format="wav"
+                voice=selected_voice
             )
             
-            # 转换为base64
-            audio_base64 = base64.b64encode(audio_data).decode('utf-8')
-            """
-            
-            # 临时模拟响应
-            await asyncio.sleep(0.5)  # 模拟处理时间
-            audio_base64 = "mock_audio_data_base64_" + str(int(time.time()))
-            
-            return {
-                "success": True,
-                "audio_data": audio_base64,
-                "format": "wav",
-                "model": "kokoro-v0_19",
-                "voice_style": voice_style,
-                "text_length": len(text)
-            }
+            if result["success"]:
+                logger.info(f"✅ SiliconFlow TTS成功 - 音频大小: {result.get('audio_size', 0)} bytes")
+                
+                return {
+                    "success": True,
+                    "audio_data": result["audio_data"],
+                    "format": result["format"],
+                    "model": "SiliconFlow/CosyVoice2-0.5B",
+                    "voice_style": selected_voice,
+                    "text_length": len(text),
+                    "sample_rate": result.get("sample_rate", 22050),
+                    "audio_size": result.get("audio_size", 0),
+                    "provider": "SiliconFlow",
+                    "available_speakers": self.available_speakers
+                }
+            else:
+                logger.error(f"❌ SiliconFlow TTS失败: {result['error']}")
+                return {
+                    "success": False,
+                    "error": result["error"]
+                }
             
         except Exception as e:
             logger.error(f"❌ TTS处理失败: {e}")
@@ -238,7 +262,7 @@ class VoiceWebSocketServer:
             "type": "welcome",
             "message": "语音服务连接成功",
             "services": {
-                "tts": "Kokoro TTS",
+                "tts": "SiliconFlow CosyVoice2-0.5B",
                 "stt": "SenseVoice-small"
             },
             "timestamp": int(time.time() * 1000)
@@ -287,14 +311,15 @@ class VoiceWebSocketServer:
         
         try:
             text = request_data.get("text", "")
-            voice_style = request_data.get("voice_style", "default")
+            voice_style = request_data.get("voice_style", "中文女")
+            speaker_name = request_data.get("speaker_name")  # 可选的预训练speaker
             
             if not text:
                 await self.send_error(websocket, "文本内容为空", request_id)
                 return
             
-            # 调用TTS处理
-            result = await self.processor.text_to_speech(text, voice_style)
+            # 调用SiliconFlow TTS处理
+            result = await self.processor.text_to_speech(text, voice_style, speaker_name)
             
             # 发送响应
             response = {
@@ -308,7 +333,10 @@ class VoiceWebSocketServer:
                 response.update({
                     "audio_data": result["audio_data"],
                     "format": result["format"],
-                    "model": result["model"]
+                    "model": result["model"],
+                    "voice_tag": result.get("voice_tag", "[S1]"),
+                    "provider": result.get("provider", "SiliconFlow"),
+                    "audio_size": result.get("audio_size", 0)
                 })
             else:
                 response["error"] = result["error"]
@@ -385,7 +413,7 @@ class VoiceWebSocketServer:
             logger.info("🎵 正在启动语音服务器...")
             logger.info(f"📍 服务地址: {self.host}:{self.port}")
             logger.info(f"🎤 STT模型: SenseVoice-small")
-            logger.info(f"📢 TTS模型: Kokoro TTS")
+            logger.info(f"📢 TTS模型: SiliconFlow CosyVoice2-0.5B")
             logger.info("="*60)
             
             # 初始化语音处理器
@@ -404,6 +432,7 @@ class VoiceWebSocketServer:
             logger.info("✅ 语音服务器启动成功！")
             logger.info("💡 前端可连接到: ws://你的IP:8001")
             logger.info("🔧 支持的消息类型: tts_request, stt_request, ping")
+            logger.info("💰 TTS价格: ￥105/百万UTF-8字节")
             logger.info("="*60)
             
             # 保持服务运行
@@ -414,25 +443,32 @@ class VoiceWebSocketServer:
 
 def main():
     """主函数"""
-    parser = argparse.ArgumentParser(description='语音服务器 - Kokoro TTS + SenseVoice STT')
+    parser = argparse.ArgumentParser(description='语音服务器 - SiliconFlow CosyVoice API + SenseVoice STT')
     parser.add_argument('--host', default='0.0.0.0', help='服务器地址')
     parser.add_argument('--port', type=int, default=8001, help='服务器端口')
-    parser.add_argument('--kokoro-path', help='Kokoro TTS模型路径')
+    parser.add_argument('--api-key', help='SiliconFlow API密钥')
     parser.add_argument('--sensevoice-path', help='SenseVoice模型路径')
     
     args = parser.parse_args()
     
     print("""
 ╔════════════════════════════════════════════════════════════════╗
-║                      语音服务器 v1.0                          ║
+║                      语音服务器 v3.0                          ║
+║                         (SiliconFlow 版本)                        ║
 ║                                                                ║
 ║  🎤 STT: SenseVoice-small (中文语音识别)                       ║
-║  📢 TTS: Kokoro TTS (高质量语音合成)                           ║
+║  📢 TTS: SiliconFlow CosyVoice2-0.5B (云端高质量语音合成)      ║
 ║                                                                ║
+║  特色功能: 150ms低延迟、多语言支持、云端计算              ║
+║  价格: ￥105/百万UTF-8字节                                      ║
 ║  连接地址: ws://你的IP:8001                                     ║
-║  用途: App与大模型间的语音处理服务                              ║
+║                                                                ║
 ╚════════════════════════════════════════════════════════════════╝
     """)
+    
+    # 设置API密钥（如果提供）
+    if args.api_key:
+        os.environ['SILICONFLOW_API_KEY'] = args.api_key
     
     server = VoiceWebSocketServer(host=args.host, port=args.port)
     

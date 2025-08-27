@@ -24,22 +24,22 @@ export default function Initial() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session ? 'User logged in' : 'User logged out')
-      
+
       if (session?.user) {
         console.log('User UID:', session.user.id)
-        
+
         // Get user profile from profiles table
         const { data: profileData, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single()
-        
+
         if (error && error.code !== 'PGRST116') {
           console.error('Error fetching user profile:', error)
           // Still allow login even if profile fetch fails
         }
-        
+
         // Use profile data if available, otherwise use auth user data
         const userData = profileData || {
           id: session.user.id,
@@ -47,7 +47,7 @@ export default function Initial() {
           full_name: session.user.user_metadata?.full_name || '',
           avatar_url: session.user.user_metadata?.avatar_url || '',
         }
-        
+
         console.log('User data loaded:', userData)
         setUserData(userData)
         setLoggedIn(true)

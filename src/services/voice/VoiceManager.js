@@ -7,7 +7,7 @@ class VoiceManager {
     this.config = appConfig.sttTts.voice_service
     this.requestId = 0
     this.pendingRequests = new Map()
-    
+
     // 连接状态回调
     this.onConnect = null
     this.onDisconnect = null
@@ -30,41 +30,40 @@ class VoiceManager {
     return new Promise((resolve, reject) => {
       const wsUrl = this.config.websocket_url
       console.log(`🔌 连接语音服务: ${wsUrl}`)
-      
+
       try {
         this.websocket = new WebSocket(wsUrl)
-        
+
         this.websocket.onopen = () => {
           this.isConnected = true
           console.log('✅ 语音服务连接成功')
           if (this.onConnect) this.onConnect()
           resolve()
         }
-        
+
         this.websocket.onmessage = (event) => {
           this.handleMessage(event.data)
         }
-        
+
         this.websocket.onclose = () => {
           this.isConnected = false
           console.log('🔌 语音服务连接关闭')
           if (this.onDisconnect) this.onDisconnect()
           this.handleReconnect()
         }
-        
+
         this.websocket.onerror = (error) => {
           console.error('❌ 语音服务连接错误:', error)
           if (this.onError) this.onError(error)
           reject(error)
         }
-        
+
         // 连接超时
         setTimeout(() => {
           if (!this.isConnected) {
             reject(new Error('语音服务连接超时'))
           }
         }, this.config.timeout)
-        
       } catch (error) {
         reject(error)
       }
@@ -74,29 +73,28 @@ class VoiceManager {
   handleMessage(data) {
     try {
       const message = JSON.parse(data)
-      
+
       if (message.type === 'welcome') {
         console.log('🎵 语音服务欢迎消息:', message.message)
         return
       }
-      
+
       if (message.type === 'pong') {
         return
       }
-      
+
       // 处理请求响应
       if (message.requestId && this.pendingRequests.has(message.requestId)) {
         const { resolve, reject, timeoutId } = this.pendingRequests.get(message.requestId)
         clearTimeout(timeoutId)
         this.pendingRequests.delete(message.requestId)
-        
+
         if (message.success) {
           resolve(message)
         } else {
           reject(new Error(message.error || '语音服务处理失败'))
         }
       }
-      
     } catch (error) {
       console.error('语音服务消息处理错误:', error)
     }
@@ -104,12 +102,12 @@ class VoiceManager {
 
   async handleReconnect() {
     if (!this.config.reconnectAttempts) return
-    
+
     console.log('🔄 尝试重新连接语音服务...')
-    
+
     for (let i = 0; i < this.config.reconnectAttempts; i++) {
       try {
-        await new Promise(resolve => setTimeout(resolve, this.config.reconnectDelay))
+        await new Promise((resolve) => setTimeout(resolve, this.config.reconnectDelay))
         await this.connect()
         console.log('✅ 语音服务重连成功')
         return
@@ -117,7 +115,7 @@ class VoiceManager {
         console.warn(`重连尝试 ${i + 1}/${this.config.reconnectAttempts} 失败:`, error.message)
       }
     }
-    
+
     console.error('❌ 语音服务重连失败')
   }
 
@@ -129,7 +127,7 @@ class VoiceManager {
     if (!this.isConnected || !this.websocket) {
       throw new Error('语音服务未连接')
     }
-    
+
     this.websocket.send(JSON.stringify(data))
     return true
   }
@@ -140,18 +138,18 @@ class VoiceManager {
   async textToSpeech(text, options = {}) {
     return new Promise((resolve, reject) => {
       const requestId = ++this.requestId
-      
+
       const timeoutId = setTimeout(() => {
         this.pendingRequests.delete(requestId)
         reject(new Error('TTS请求超时'))
       }, this.config.timeout)
-      
+
       this.pendingRequests.set(requestId, {
         resolve,
         reject,
-        timeoutId
+        timeoutId,
       })
-      
+
       const requestData = {
         type: 'tts_request',
         requestId,
@@ -160,9 +158,9 @@ class VoiceManager {
           voice_style: options.voice_style || this.config.tts.voice_style,
           format: options.format || this.config.tts.format,
         },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }
-      
+
       try {
         this.send(requestData)
         console.log(`📢 发送TTS请求: ${text.substring(0, 30)}...`)
@@ -180,18 +178,18 @@ class VoiceManager {
   async speechToText(audioData, options = {}) {
     return new Promise((resolve, reject) => {
       const requestId = ++this.requestId
-      
+
       const timeoutId = setTimeout(() => {
         this.pendingRequests.delete(requestId)
         reject(new Error('STT请求超时'))
       }, this.config.timeout)
-      
+
       this.pendingRequests.set(requestId, {
         resolve,
         reject,
-        timeoutId
+        timeoutId,
       })
-      
+
       const requestData = {
         type: 'stt_request',
         requestId,
@@ -200,9 +198,9 @@ class VoiceManager {
           language: options.language || this.config.stt.language,
           enable_itn: options.enable_itn !== undefined ? options.enable_itn : this.config.stt.enable_itn,
         },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }
-      
+
       try {
         this.send(requestData)
         console.log('🎤 发送STT请求...')
@@ -231,8 +229,8 @@ class VoiceManager {
       pendingRequests: this.pendingRequests.size,
       models: {
         tts: this.config.tts.model,
-        stt: this.config.stt.model
-      }
+        stt: this.config.stt.model,
+      },
     }
   }
 
@@ -243,12 +241,12 @@ class VoiceManager {
     if (!this.isConnected) {
       throw new Error('语音服务未连接')
     }
-    
+
     const pingData = {
       type: 'ping',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
-    
+
     this.send(pingData)
   }
 
@@ -262,13 +260,13 @@ class VoiceManager {
       request.reject(new Error('语音服务已停止'))
     }
     this.pendingRequests.clear()
-    
+
     // 关闭WebSocket连接
     if (this.websocket) {
       this.websocket.close()
       this.websocket = null
     }
-    
+
     this.isConnected = false
     console.log('🧹 语音服务已清理')
   }
