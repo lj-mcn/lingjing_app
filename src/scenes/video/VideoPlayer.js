@@ -25,6 +25,7 @@ export default function VideoPlayer() {
   const [showGabalonModal, setShowGabalonModal] = useState(false)
   const [playingGabalonVideo, setPlayingGabalonVideo] = useState(false)
   const [showGabalonReward, setShowGabalonReward] = useState(false)
+  const [showSkipButton, setShowSkipButton] = useState(false)
 
   useEffect(() => {
     const initializeAudioVideo = async () => {
@@ -95,6 +96,17 @@ export default function VideoPlayer() {
     }
   }, [showGabalonModal])
 
+  useEffect(() => {
+    // 2秒后显示跳过按键
+    const timer = setTimeout(() => {
+      if (!playingStoreVideo && !playingGabalonVideo) {
+        setShowSkipButton(true)
+      }
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [playingStoreVideo, playingGabalonVideo])
+
   const handleVideoEnd = async () => {
     // 停止背景音乐
     if (audioRef.current) {
@@ -116,6 +128,12 @@ export default function VideoPlayer() {
       console.log('Video finished, showing store prompt')
       setShowStorePrompt(true)
     }
+  }
+
+  const handleSkipVideo = () => {
+    console.log('User skipped village video')
+    setShowSkipButton(false)
+    handleVideoEnd()
   }
 
   const handleStoreClick = () => {
@@ -173,20 +191,30 @@ export default function VideoPlayer() {
     <View style={styles.container}>
       <StatusBar hidden />
       {!playingStoreVideo && !playingGabalonVideo ? (
-        <Video
-          ref={videoRef}
-          style={styles.video}
-          source={require('../../../assets/images/垃圾村漫游视频.mp4')}
-          useNativeControls={false}
-          resizeMode="cover"
-          isLooping={false}
-          shouldPlay
-          onPlaybackStatusUpdate={(status) => {
-            if (status.didJustFinish) {
-              handleVideoEnd()
-            }
-          }}
-        />
+        <>
+          <Video
+            ref={videoRef}
+            style={styles.video}
+            source={require('../../../assets/images/垃圾村漫游视频.mp4')}
+            useNativeControls={false}
+            resizeMode="cover"
+            isLooping={false}
+            shouldPlay
+            onPlaybackStatusUpdate={(status) => {
+              if (status.didJustFinish) {
+                handleVideoEnd()
+              }
+            }}
+          />
+          {showSkipButton && (
+            <TouchableOpacity
+              style={styles.skipButton}
+              onPress={handleSkipVideo}
+            >
+              <Text style={styles.skipButtonText}>跳过</Text>
+            </TouchableOpacity>
+          )}
+        </>
       ) : playingStoreVideo ? (
         <Video
           style={styles.video}
@@ -337,6 +365,23 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: '#999',
     fontSize: 16,
+    textAlign: 'center',
+  },
+  skipButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  skipButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
     textAlign: 'center',
   },
 })

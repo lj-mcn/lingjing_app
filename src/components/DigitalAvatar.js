@@ -8,7 +8,7 @@ import { Video } from 'expo-av'
 import { LinearGradient } from 'expo-linear-gradient'
 import { BlurView } from 'expo-blur'
 import { ColorSchemeContext } from '../context/ColorSchemeContext'
-import digitalHumanService from '../services/DigitalHumanService'
+import digitalAssistant from '../services/assistant/DigitalAssistant'
 
 // 禁用Video组件的错误弹窗
 const DISABLE_VIDEO_ALERTS = true
@@ -31,6 +31,7 @@ export default function DigitalAvatar({
   onSadVideoEnd = null,
   showScaredVideo = false,
   onScaredVideoEnd = null,
+  textOnlyMode = false, // 新增：纯文本模式标志
 }) {
   const videoRef = useRef(null)
   const [status, setStatus] = useState('idle') // idle, recording, processing, speaking
@@ -63,21 +64,22 @@ export default function DigitalAvatar({
   }, [autoPlay])
 
   useEffect(() => {
-    if (enableInteraction && !isInitialized) {
+    // Initialize if enableInteraction is true OR if we have an onMessage callback
+    if ((enableInteraction || onMessage) && !isInitialized) {
       initializeDigitalHuman()
     }
-  }, [enableInteraction])
+  }, [enableInteraction, onMessage])
 
   const initializeDigitalHuman = async () => {
     try {
       console.log('开始初始化数字人...')
 
       // 导入配置
-      const llmConfig = await import('../config/llmConfig.js').then((m) => m.default)
+      const appConfig = await import('../config/AppConfig.js').then((m) => m.default)
       console.log('LLM配置加载完成')
 
       // 验证配置
-      const configValidation = llmConfig.validateConfig()
+      const configValidation = appConfig.validateConfig()
       console.log('配置验证结果:', configValidation)
 
       if (!configValidation.isValid) {
@@ -90,23 +92,31 @@ export default function DigitalAvatar({
         console.warn('配置警告:', configValidation.warnings)
       }
 
-      // 配置数字人服务（使用我们自己的LLM）
+      // 配置数字人服务（支持 SiliconFlow API 和 WebSocket）
       const config = {
+        textOnlyMode, // 传递纯文本模式标志
         llm: {
-          websocket_url: llmConfig.responseLLM.websocket_url,
-          timeout: llmConfig.responseLLM.timeout,
-          max_tokens: llmConfig.responseLLM.max_tokens,
-          model: llmConfig.responseLLM.model,
+          provider: appConfig.responseLLM.provider,
+          api_url: appConfig.responseLLM.api_url,
+          api_key: appConfig.responseLLM.api_key,
+          websocket_url: appConfig.responseLLM.websocket_url,
+          timeout: appConfig.responseLLM.timeout,
+          max_tokens: appConfig.responseLLM.max_tokens,
+          model: appConfig.responseLLM.model,
+          temperature: appConfig.responseLLM.temperature,
+          top_p: appConfig.responseLLM.top_p,
+          frequency_penalty: appConfig.responseLLM.frequency_penalty,
+          presence_penalty: appConfig.responseLLM.presence_penalty,
         },
-        websocket_url: llmConfig.responseLLM.websocket_url, // 添加顶级websocket_url
+        websocket_url: appConfig.websocket.url, // 用于数字人动画的WebSocket
         sttTts: {},
       }
 
-      console.log('环境配置:', llmConfig.getEnvironmentConfig())
+      console.log('环境配置:', appConfig.getEnvironmentConfig())
       console.log('初始化配置:', config)
 
-      console.log('开始调用digitalHumanService.initialize...')
-      const initialized = await digitalHumanService.initialize(config)
+      console.log('开始调用digitalAssistant.initialize...')
+      const initialized = await digitalAssistant.initialize(config)
       console.log('初始化结果:', initialized)
 
       if (initialized) {
@@ -114,12 +124,11 @@ export default function DigitalAvatar({
         setIsInitialized(true)
 
         // 设置回调函数
-        digitalHumanService.setCallbacks({
+        digitalAssistant.setCallbacks({
           onStatusChange: (newStatus) => {
             setStatus(newStatus)
           },
           onMessage: (message) => {
-            console.log(`[${message.role}]: ${message.message}`)
             if (onMessage) {
               onMessage(message)
             }
@@ -147,7 +156,7 @@ export default function DigitalAvatar({
     if (status === 'idle') {
       // 开始语音对话
       console.log('🎙️ 用户点击开始语音对话')
-      const result = await digitalHumanService.startVoiceConversation()
+      const result = await digitalAssistant.startVoiceConversation()
       if (result.success) {
         console.log(`✅ 语音对话已开始: ${result.message}`)
       } else {
@@ -156,7 +165,7 @@ export default function DigitalAvatar({
     } else if (status === 'recording') {
       // 结束录音并处理
       console.log('🛑 用户点击停止录音')
-      const processed = await digitalHumanService.stopVoiceConversation()
+      const processed = await digitalAssistant.stopVoiceConversation()
       if (processed) {
         console.log('✅ 语音对话处理完成')
       } else {
@@ -504,8 +513,6 @@ export default function DigitalAvatar({
             }
           }}
         />
-
-
 
         {/* 视频加载失败时的后备显示 */}
         {videoError && (

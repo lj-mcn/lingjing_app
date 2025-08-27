@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
 // import ConfigTester from '../../components/ConfigTester'
-import digitalHumanService from '../../services/DigitalHumanService'
+import digitalAssistant from '../../services/assistant/DigitalAssistant'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
 import { UserDataContext } from '../../context/UserDataContext'
@@ -29,6 +29,9 @@ export default function Voice() {
   const [smartConversationMode, setSmartConversationMode] = useState(false)
   const [vadState, setVadState] = useState('idle') // 语音活动状态
   const [paperBallScale] = useState(new Animated.Value(1)) // 纸团缩放动画
+  const [isManualRecording, setIsManualRecording] = useState(false) // 手动录音状态
+  const [isPTTRecording, setIsPTTRecording] = useState(false) // PTT录音状态
+  const [pttButtonScale] = useState(new Animated.Value(1)) // PTT按钮缩放动画
 
   useEffect(() => {
     console.log('Voice screen - 嘎巴龙语音交互')
@@ -76,7 +79,7 @@ export default function Voice() {
 
   const startVoiceRecording = async () => {
     setIsListening(true)
-    const result = await digitalHumanService.startVoiceRecording()
+    const result = await digitalAssistant.startVoiceRecording()
     if (!result.success) {
       console.error('无法启动语音录制:', result.error)
       // Alert.alert('错误', `无法启动语音录制: ${result.error}`)
@@ -86,18 +89,99 @@ export default function Voice() {
 
   const stopVoiceRecording = async () => {
     setIsListening(false)
-    const result = await digitalHumanService.stopVoiceRecording()
+    const result = await digitalAssistant.stopVoiceRecording()
     if (!result.success) {
       console.error('语音处理失败:', result.error)
       // Alert.alert('错误', `语音处理失败: ${result.error}`)
     }
   }
 
+  // 手动麦克风按钮处理
+  const handleManualMicPress = async () => {
+    if (isManualRecording) {
+      // 停止录音
+      console.log('🎤 停止手动录音')
+      setIsManualRecording(false)
+      const result = await digitalAssistant.stopManualVoiceRecording()
+      if (!result.success) {
+        console.error('语音处理失败:', result.error)
+      }
+    } else {
+      // 开始录音 - 首先停止AI语音输出
+      console.log('🎤 开始手动录音 - 停止AI输出')
+      setIsManualRecording(true)
 
-  // 切换智能对话模式
+      // 立即停止AI说话并开始录音
+      const result = await digitalAssistant.startManualVoiceRecording()
+      if (!result.success) {
+        console.error('无法启动语音录制:', result.error)
+        setIsManualRecording(false)
+      }
+    }
+  }
+
+  // PTT按钮按下处理 - 开始录音
+  const handlePTTPressIn = async () => {
+    try {
+      console.log('🎤 PTT按下 - 开始录音')
+      setIsPTTRecording(true)
+
+      // 按钮缩放动画
+      Animated.spring(pttButtonScale, {
+        toValue: 1.1,
+        useNativeDriver: true,
+        tension: 150,
+        friction: 4,
+      }).start()
+
+      // 开始录音
+      const result = await digitalAssistant.startManualVoiceRecording()
+      if (!result.success) {
+        console.error('PTT录音启动失败:', result.error)
+        setIsPTTRecording(false)
+        // 恢复按钮大小
+        Animated.spring(pttButtonScale, {
+          toValue: 1,
+          useNativeDriver: true,
+        }).start()
+      }
+    } catch (error) {
+      console.error('PTT按下失败:', error)
+      setIsPTTRecording(false)
+    }
+  }
+
+  // PTT按钮松开处理 - 停止录音
+  const handlePTTPressOut = async () => {
+    try {
+      console.log('🎤 PTT松开 - 停止录音')
+
+      // 恢复按钮大小
+      Animated.spring(pttButtonScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 150,
+        friction: 4,
+      }).start()
+
+      if (isPTTRecording) {
+        setIsPTTRecording(false)
+        // 停止录音并处理
+        const result = await digitalAssistant.stopManualVoiceRecording()
+        if (!result.success) {
+          console.error('PTT录音停止失败:', result.error)
+        }
+      }
+    } catch (error) {
+      console.error('PTT松开失败:', error)
+      setIsPTTRecording(false)
+    }
+  }
+
+  // 切换智能对话模式 - 保留但改为备用功能
   const toggleSmartConversationMode = async () => {
     if (smartConversationMode) {
-      const result = await digitalHumanService.stopSmartConversation()
+      const result = await digitalAssistant.stopSmartConversation()
       if (result.success) {
         setSmartConversationMode(false)
         setIsListening(false)
@@ -108,7 +192,7 @@ export default function Voice() {
         setChatStarted(true)
       }
 
-      const result = await digitalHumanService.startSmartConversation()
+      const result = await digitalAssistant.startSmartConversation()
       if (result.success) {
         setSmartConversationMode(true)
         setIsListening(true)
@@ -119,7 +203,7 @@ export default function Voice() {
 
   // 监听数字人服务状态变化
   useEffect(() => {
-    digitalHumanService.setCallbacks({
+    digitalAssistant.setCallbacks({
       onStatusChange: (status) => {
         if (status === 'listening') {
           setVadState('listening')
@@ -133,14 +217,14 @@ export default function Voice() {
           setVadState('idle')
         }
       },
-      onMessage: handleMessage
+      onMessage: handleMessage,
     })
 
     // 清理函数，组件卸载时清理状态
     return () => {
       // 如果组件卸载时还有活跃的对话模式，进行清理
       if (smartConversationMode) {
-        digitalHumanService.stopSmartConversation()
+        digitalAssistant.stopSmartConversation()
       }
     }
   }, [smartConversationMode])
@@ -189,23 +273,46 @@ export default function Voice() {
           </View>
         ) : (
           <>
-            {/* 智能对话控制按钮 */}
+            {/* PTT (Push-to-Talk) 主按钮 */}
             <View style={styles.smartControlContainer}>
               <TouchableOpacity
                 style={[
-                  styles.smartButton,
-                  smartConversationMode ? styles.smartButtonActive : styles.smartButtonInactive,
+                  styles.pttButton,
+                  isPTTRecording ? styles.pttButtonActive : styles.pttButtonInactive,
                 ]}
-                onPress={toggleSmartConversationMode}
-                activeOpacity={0.8}
+                onPressIn={handlePTTPressIn}
+                onPressOut={handlePTTPressOut}
+                activeOpacity={1}
+                delayPressOut={0}
               >
-                <Text style={styles.smartButtonText}>
-                  {smartConversationMode ? '结束对话 ⏹️' : '开始对话 🎤'}
-                </Text>
+                <Animated.View style={{ transform: [{ scale: pttButtonScale }] }}>
+                  <Text style={styles.pttButtonIcon}>
+                    {isPTTRecording ? '🔴' : '🎤'}
+                  </Text>
+                  <Text style={[
+                    styles.pttButtonText,
+                    isPTTRecording ? styles.pttButtonTextActive : styles.pttButtonTextInactive,
+                  ]}
+                  >
+                    {isPTTRecording ? '录音中...' : '按住说话'}
+                  </Text>
+                  <Text style={styles.pttButtonHint}>
+                    {isPTTRecording ? '松开发送' : '按下开始录音'}
+                  </Text>
+                </Animated.View>
               </TouchableOpacity>
 
+              {/* 模式切换按钮 - 可选的智能对话模式 */}
+              <TouchableOpacity
+                style={styles.modeToggleButton}
+                onPress={toggleSmartConversationMode}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modeToggleText}>
+                  {smartConversationMode ? '退出智能模式' : '智能连续对话'}
+                </Text>
+              </TouchableOpacity>
             </View>
-
 
             {/* 原有的单次录音按钮（在智能对话模式下隐藏） */}
             {!smartConversationMode && (
@@ -477,5 +584,108 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(139, 69, 19, 0.3)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
+  },
+  manualMicButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginTop: 20,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  manualMicButtonActive: {
+    backgroundColor: '#ff4757', // 红色表示录音中
+    shadowColor: '#ff4757',
+  },
+  manualMicButtonInactive: {
+    backgroundColor: '#3742fa', // 蓝色表示可录音
+    shadowColor: '#3742fa',
+  },
+  manualMicButtonIcon: {
+    fontSize: 28,
+    marginBottom: 4,
+    color: 'white',
+  },
+  manualMicButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  // PTT (Push-to-Talk) 按钮样式
+  pttButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    marginBottom: 20,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.6,
+    shadowRadius: 15,
+    elevation: 20,
+  },
+  pttButtonActive: {
+    backgroundColor: '#ff4757', // 录音时红色
+    shadowColor: '#ff4757',
+    borderWidth: 3,
+    borderColor: '#ffffff',
+  },
+  pttButtonInactive: {
+    backgroundColor: '#3742fa', // 待机时蓝色
+    shadowColor: '#3742fa',
+    borderWidth: 2,
+    borderColor: '#e6e6fa',
+  },
+  pttButtonIcon: {
+    fontSize: 40,
+    marginBottom: 8,
+    color: 'white',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+  },
+  pttButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 4,
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  pttButtonTextActive: {
+    color: '#ffffff',
+    textShadowColor: 'rgba(255,71,87,0.5)',
+  },
+  pttButtonTextInactive: {
+    color: '#ffffff',
+    textShadowColor: 'rgba(55,66,250,0.5)',
+  },
+  pttButtonHint: {
+    fontSize: 12,
+    color: '#ffffff',
+    textAlign: 'center',
+    opacity: 0.9,
+    fontWeight: '500',
+  },
+  // 模式切换按钮
+  modeToggleButton: {
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginTop: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)',
+  },
+  modeToggleText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    fontWeight: '500',
   },
 })

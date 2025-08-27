@@ -3,15 +3,14 @@ import {
   Text, StyleSheet, View, Linking,
 } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
-import { setDoc, doc } from 'firebase/firestore'
 import Spinner from 'react-native-loading-spinner-overlay'
 import { useNavigation } from '@react-navigation/native'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import TextInputBox from '../../components/TextInputBox'
 import Button from '../../components/Button'
 import Logo from '../../components/Logo'
-import { firestore, auth } from '../../firebase/config'
+import EmailVerification from '../../components/EmailVerification'
+import { supabase } from '../../../lib/supabase'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
 import { defaultAvatar, eulaLink } from '../../config'
@@ -22,6 +21,9 @@ export default function Registration() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [spinner, setSpinner] = useState(false)
+  const [showVerification, setShowVerification] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
+  const [userRegistrationData, setUserRegistrationData] = useState(null)
   const navigation = useNavigation()
   const { scheme } = useContext(ColorSchemeContext)
   const isDark = scheme === 'dark'
@@ -58,47 +60,88 @@ export default function Registration() {
 
     try {
       setSpinner(true)
-      console.log('Creating user account for:', email)
-      const response = await createUserWithEmailAndPassword(auth, email, password)
-      const { uid } = response.user
+      console.log('Sending OTP to email:', email)
 
-      const data = {
-        id: uid,
+      // Send OTP for registration
+      const { data, error } = await supabase.auth.signInWithOtp({
         email,
-        fullName,
-        avatar: defaultAvatar,
+        options: {
+          data: {
+            full_name: fullName,
+            avatar_url: defaultAvatar,
+            password, // Store password temporarily for verification
+          },
+        },
+      })
+
+      if (error) {
+        throw error
       }
 
-      console.log('Saving user data to Firestore:', data)
-      const usersRef = doc(firestore, 'users', uid)
-      await setDoc(usersRef, data)
-      console.log('User registration successful')
+      console.log('OTP sent successfully')
+      console.log('Please check your email for verification code')
+
+      // Store registration data for verification
+      const registrationData = {
+        email,
+        fullName,
+        password,
+        defaultAvatar,
+      }
+
+      // Show verification screen
+      setRegisteredEmail(email)
+      setUserRegistrationData(registrationData)
+      setShowVerification(true)
       setSpinner(false)
     } catch (error) {
-      console.error('Registration error:', error.code, error.message)
+      console.error('Registration error:', error.message)
       setSpinner(false)
 
       let errorMessage = 'Registration failed. Please try again.'
-      switch (error.code) {
-        case 'auth/email-already-in-use':
+      switch (error.message) {
+        case 'User already registered':
           errorMessage = 'This email address is already in use.'
           break
-        case 'auth/invalid-email':
+        case 'Invalid email':
           errorMessage = 'Invalid email address format.'
           break
-        case 'auth/weak-password':
-          errorMessage = 'Password is too weak. Please use a stronger password.'
+        case 'Password should be at least 6 characters':
+          errorMessage = 'Password should be at least 6 characters long.'
           break
-        case 'auth/network-request-failed':
-          errorMessage = 'Network error. Please check your connection.'
+        case 'Unable to validate email address: invalid format':
+          errorMessage = 'Invalid email address format.'
           break
         default:
-          errorMessage = error.message
+          errorMessage = error.message || 'An unexpected error occurred.'
       }
 
       console.error('Registration error message:', errorMessage)
       // alert(errorMessage)
     }
+  }
+
+  const onVerificationComplete = () => {
+    setShowVerification(false)
+    navigation.navigate('Login')
+  }
+
+  if (showVerification) {
+    return (
+      <ScreenTemplate>
+        <EmailVerification
+          email={registeredEmail}
+          isRegistration
+          registrationData={userRegistrationData}
+          onVerificationComplete={onVerificationComplete}
+        />
+        <Spinner
+          visible={spinner}
+          textStyle={{ color: colors.white }}
+          overlayColor="rgba(0,0,0,0.5)"
+        />
+      </ScreenTemplate>
+    )
   }
 
   return (

@@ -1,18 +1,18 @@
 import React, {
   useEffect, useState, useContext, useRef,
+  useLayoutEffect,
 } from 'react'
 import {
   Text, View, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image, Animated, Dimensions,
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
-import { useLayoutEffect } from 'react'
 import { PanGestureHandler, State } from 'react-native-gesture-handler'
 import ScreenTemplate from '../../components/ScreenTemplate'
 import DigitalAvatar from '../../components/DigitalAvatar'
 import Button from '../../components/Button'
 // import ConfigTester from '../../components/ConfigTester'
-import digitalHumanService from '../../services/DigitalHumanService'
-import responseLLMService from '../../services/ResponseLLMService'
+import digitalAssistant from '../../services/assistant/DigitalAssistant'
+import chatService from '../../services/chat/ChatService'
 import { colors, fontSize } from '../../theme'
 import { ColorSchemeContext } from '../../context/ColorSchemeContext'
 import { UserDataContext } from '../../context/UserDataContext'
@@ -56,11 +56,9 @@ export default function TextChat() {
   }, [])
 
   // 组件卸载时清理计时器
-  useEffect(() => {
-    return () => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current)
-      }
+  useEffect(() => () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
     }
   }, [])
 
@@ -98,7 +96,7 @@ export default function TextChat() {
   // 更新记忆状态
   useEffect(() => {
     const updateMemoryStats = () => {
-      const stats = responseLLMService.getMemoryStats()
+      const stats = chatService.getMemoryStats()
       setMemoryStats(stats)
     }
 
@@ -128,11 +126,10 @@ export default function TextChat() {
   // 处理嘉巴龙拖拽手势
   const handleAvatarGesture = (event) => {
     const { state, translationX, translationY } = event.nativeEvent
-    
+
     if (state === State.BEGAN) {
       // 手势开始
       setIsDragging(false)
-      
     } else if (state === State.ACTIVE) {
       // 手势活跃状态 - 直接跟随拖拽
       if (!isAvatarExpanded) {
@@ -146,14 +143,13 @@ export default function TextChat() {
             friction: 8,
           }).start()
         }
-        
+
         // 实时更新位置跟随手指
         avatarPosition.setValue({
           x: translationX,
           y: translationY,
         })
       }
-      
     } else if (state === State.END || state === State.CANCELLED || state === State.FAILED) {
       // 手势结束
       if (isDragging && !isAvatarExpanded) {
@@ -164,29 +160,28 @@ export default function TextChat() {
           tension: 150,
           friction: 8,
         }).start()
-        
+
         // 固定在新位置
         const currentX = avatarPosition.x._value
         const currentY = avatarPosition.y._value
-        
+
         // 先获取当前的offset
         const currentOffsetX = avatarPosition.x._offset || 0
         const currentOffsetY = avatarPosition.y._offset || 0
-        
+
         // 设置新的offset为当前offset + 当前值
         avatarPosition.setOffset({
           x: currentOffsetX + currentX,
           y: currentOffsetY + currentY,
         })
-        
+
         // 重置值为0，这样下次拖拽从0开始计算
         avatarPosition.setValue({ x: 0, y: 0 })
       }
-      
+
       setIsDragging(false)
     }
   }
-
 
   // 放大镜按钮切换放大/缩小
   const handleMagnifyPress = () => {
@@ -195,7 +190,7 @@ export default function TextChat() {
       const currentX = avatarPosition.x._value + (avatarPosition.x._offset || 0)
       const currentY = avatarPosition.y._value + (avatarPosition.y._offset || 0)
       setSavedPosition({ x: currentX, y: currentY })
-      
+
       setIsAvatarExpanded(true)
       // 重置拖拽缩放，放大并移动到屏幕中央
       Animated.parallel([
@@ -208,10 +203,10 @@ export default function TextChat() {
           useNativeDriver: false,
         }),
         Animated.spring(avatarPosition, {
-          toValue: { 
-            x: screenWidth/2 - 20 - 25, // 屏幕中心 - container右偏移 - avatar宽度一半
-            y: screenHeight/2 - 20 - 37.5 // 屏幕中心 - container上偏移 - avatar高度一半  
-          }, 
+          toValue: {
+            x: screenWidth / 2 - 20 - 25, // 屏幕中心 - container右偏移 - avatar宽度一半
+            y: screenHeight / 2 - 20 - 37.5, // 屏幕中心 - container上偏移 - avatar高度一半
+          },
           useNativeDriver: false,
         }),
       ]).start(() => {
@@ -238,7 +233,6 @@ export default function TextChat() {
     }
   }
 
-
   const handleMessage = (message) => {
     setMessages((prev) => [...prev, message])
   }
@@ -250,16 +244,16 @@ export default function TextChat() {
     setInputText('')
     setIsTyping(true)
 
-    // 添加用户消息到对话历史
-    const newUserMessage = {
-      role: 'user',
-      message: userMessage,
-      timestamp: new Date().toLocaleTimeString(),
-    }
-    setMessages((prev) => [...prev, newUserMessage])
-
     // 检测特殊消息并触发相应视频和自定义回复
     if (userMessage === '你好笨啊！') {
+      // 添加用户消息
+      const newUserMessage = {
+        role: 'user',
+        message: userMessage,
+        timestamp: new Date().toLocaleTimeString(),
+      }
+      setMessages((prev) => [...prev, newUserMessage])
+
       // 重置其他视频状态
       setShowHappyVideo(false)
       setShowSadVideo(false)
@@ -278,6 +272,14 @@ export default function TextChat() {
     }
 
     if (userMessage === '嘎巴龙，我们做朋友吧！') {
+      // 添加用户消息
+      const newUserMessage = {
+        role: 'user',
+        message: userMessage,
+        timestamp: new Date().toLocaleTimeString(),
+      }
+      setMessages((prev) => [...prev, newUserMessage])
+
       // 重置其他视频状态
       setShowAngryVideo(false)
       setShowSadVideo(false)
@@ -296,6 +298,14 @@ export default function TextChat() {
     }
 
     if (userMessage === '哥们，亮屁兔真比你帅吧！') {
+      // 添加用户消息
+      const newUserMessage = {
+        role: 'user',
+        message: userMessage,
+        timestamp: new Date().toLocaleTimeString(),
+      }
+      setMessages((prev) => [...prev, newUserMessage])
+
       // 重置其他视频状态
       setShowAngryVideo(false)
       setShowHappyVideo(false)
@@ -314,6 +324,14 @@ export default function TextChat() {
     }
 
     if (userMessage === '你家里的垃圾都被垃圾鸡偷走了！') {
+      // 添加用户消息
+      const newUserMessage = {
+        role: 'user',
+        message: userMessage,
+        timestamp: new Date().toLocaleTimeString(),
+      }
+      setMessages((prev) => [...prev, newUserMessage])
+
       // 重置其他视频状态
       setShowAngryVideo(false)
       setShowHappyVideo(false)
@@ -333,7 +351,7 @@ export default function TextChat() {
 
     try {
       // 发送文本消息给数字人
-      const result = await digitalHumanService.sendTextMessage(userMessage)
+      const result = await digitalAssistant.sendTextMessage(userMessage)
       if (!result.success) {
         console.error('发送消息失败:', result.error)
         // Alert.alert('错误', `发送消息失败: ${result.error}`)
@@ -378,7 +396,7 @@ export default function TextChat() {
     console.log('Clear messages requested - current messages count:', messages.length)
     // 直接清空
     setMessages([])
-    responseLLMService.clearMemory()
+    chatService.clearMemory()
     console.log('Messages cleared - new count should be 0')
   }
 
@@ -406,8 +424,8 @@ export default function TextChat() {
                 <DigitalAvatar
                   style={styles.avatar}
                   videoStyle={styles.avatarVideo}
-                  onMessage={handleMessage}
                   enableInteraction={false}
+                  textOnlyMode
                   showAngryVideo={showAngryVideo}
                   onAngryVideoEnd={handleAngryVideoEnd}
                   showHappyVideo={showHappyVideo}
@@ -465,11 +483,14 @@ export default function TextChat() {
                         { scale: Animated.multiply(avatarScale, dragScale) },
                       ],
                     },
-                  ]}>
+                  ]}
+                  >
                     <DigitalAvatar
                       style={styles.floatingAvatarContent}
                       videoStyle={styles.floatingAvatarVideo}
-                      enableInteraction={false}
+                      onMessage={handleMessage}
+                      enableInteraction
+                      textOnlyMode
                       showAngryVideo={showAngryVideo}
                       onAngryVideoEnd={handleAngryVideoEnd}
                       showHappyVideo={showHappyVideo}
@@ -482,7 +503,6 @@ export default function TextChat() {
                   </Animated.View>
                 </PanGestureHandler>
               </View>
-              
 
               {/* 对话区域 - 放大版本 */}
               <View style={[styles.expandedChatContainer, { backgroundColor: colorScheme.cardBackground }]}>
@@ -506,7 +526,7 @@ export default function TextChat() {
                         {isAvatarExpanded ? '🔍−' : '🔍+'}
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       onPress={clearMessages}
                       activeOpacity={0.7}
                     >
@@ -560,7 +580,7 @@ export default function TextChat() {
                     </View>
                   )}
                 </ScrollView>
-                
+
                 {/* 输入区域 - 在对话记录内部 */}
                 <View style={styles.inputContainer}>
                   <View style={styles.inputWrapper}>
@@ -578,14 +598,14 @@ export default function TextChat() {
                       maxLength={500}
                       editable={!isTyping}
                     />
-                    
+
                     {/* 内置发送按钮 */}
                     <TouchableOpacity
                       style={[
                         styles.inlineSendButton,
                         {
                           backgroundColor: isTyping || inputText.trim().length === 0 ? '#ccc' : colors.tertiary,
-                        }
+                        },
                       ]}
                       onPress={handleSendText}
                       disabled={isTyping || inputText.trim().length === 0}
