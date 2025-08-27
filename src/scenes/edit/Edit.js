@@ -63,33 +63,33 @@ export default function Edit() {
             compress: 0.4,
           },
         )
-        
+
         // Convert image to blob for upload
         const response = await fetch(manipulatorResult.uri)
         const blob = await response.blob()
         const arrayBuffer = await blob.arrayBuffer()
-        
+
         const filename = `${userData.id}/${new Date().getTime()}.jpg`
-        
+
         // Upload to Supabase Storage
         const { data, error } = await supabase.storage
           .from('avatars')
           .upload(filename, arrayBuffer, {
             contentType: 'image/jpeg',
-            upsert: true
+            upsert: true,
           })
-        
+
         if (error) {
           console.error('Upload failed:', error)
           // alert('Upload failed.')
           return
         }
-        
+
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('avatars')
           .getPublicUrl(filename)
-        
+
         setProgress('')
         setAvatar(publicUrl)
       }
@@ -106,16 +106,16 @@ export default function Edit() {
         full_name: fullName,
         avatar_url: avatar,
       }
-      
+
       const { error } = await supabase
         .from('profiles')
         .update(data)
         .eq('id', userData.id)
-      
+
       if (error) {
         throw error
       }
-      
+
       navigation.goBack()
     } catch (e) {
       console.error('Profile update error:', e)
@@ -131,25 +131,25 @@ export default function Edit() {
     }
     try {
       setSpinner(true)
-      
+
       // Supabase requires re-authentication for password change
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: userData.email,
         password: currentPassword,
       })
-      
+
       if (signInError) {
         throw new Error('Current password is incorrect')
       }
-      
+
       const { error } = await supabase.auth.updateUser({
-        password: password
+        password,
       })
-      
+
       if (error) {
         throw error
       }
-      
+
       showToast({
         title: 'Password changed',
         body: 'Your password has changed.',

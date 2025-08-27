@@ -61,17 +61,17 @@ export default function Registration() {
     try {
       setSpinner(true)
       console.log('Sending OTP to email:', email)
-      
+
       // Send OTP for registration
       const { data, error } = await supabase.auth.signInWithOtp({
-        email: email,
+        email,
         options: {
           data: {
             full_name: fullName,
             avatar_url: defaultAvatar,
-            password: password, // Store password temporarily for verification
-          }
-        }
+            password, // Store password temporarily for verification
+          },
+        },
       })
 
       if (error) {
@@ -80,15 +80,15 @@ export default function Registration() {
 
       console.log('OTP sent successfully')
       console.log('Please check your email for verification code')
-      
+
       // Store registration data for verification
       const registrationData = {
         email,
         fullName,
         password,
-        defaultAvatar
+        defaultAvatar,
       }
-      
+
       // Show verification screen
       setRegisteredEmail(email)
       setUserRegistrationData(registrationData)
@@ -129,9 +129,9 @@ export default function Registration() {
   if (showVerification) {
     return (
       <ScreenTemplate>
-        <EmailVerification 
+        <EmailVerification
           email={registeredEmail}
-          isRegistration={true}
+          isRegistration
           registrationData={userRegistrationData}
           onVerificationComplete={onVerificationComplete}
         />

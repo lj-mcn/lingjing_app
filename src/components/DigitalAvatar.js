@@ -31,6 +31,7 @@ export default function DigitalAvatar({
   onSadVideoEnd = null,
   showScaredVideo = false,
   onScaredVideoEnd = null,
+  textOnlyMode = false, // 新增：纯文本模式标志
 }) {
   const videoRef = useRef(null)
   const [status, setStatus] = useState('idle') // idle, recording, processing, speaking
@@ -63,10 +64,11 @@ export default function DigitalAvatar({
   }, [autoPlay])
 
   useEffect(() => {
-    if (enableInteraction && !isInitialized) {
+    // Initialize if enableInteraction is true OR if we have an onMessage callback
+    if ((enableInteraction || onMessage) && !isInitialized) {
       initializeDigitalHuman()
     }
-  }, [enableInteraction])
+  }, [enableInteraction, onMessage])
 
   const initializeDigitalHuman = async () => {
     try {
@@ -90,15 +92,23 @@ export default function DigitalAvatar({
         console.warn('配置警告:', configValidation.warnings)
       }
 
-      // 配置数字人服务（使用我们自己的LLM）
+      // 配置数字人服务（支持 SiliconFlow API 和 WebSocket）
       const config = {
+        textOnlyMode, // 传递纯文本模式标志
         llm: {
+          provider: appConfig.responseLLM.provider,
+          api_url: appConfig.responseLLM.api_url,
+          api_key: appConfig.responseLLM.api_key,
           websocket_url: appConfig.responseLLM.websocket_url,
           timeout: appConfig.responseLLM.timeout,
           max_tokens: appConfig.responseLLM.max_tokens,
           model: appConfig.responseLLM.model,
+          temperature: appConfig.responseLLM.temperature,
+          top_p: appConfig.responseLLM.top_p,
+          frequency_penalty: appConfig.responseLLM.frequency_penalty,
+          presence_penalty: appConfig.responseLLM.presence_penalty,
         },
-        websocket_url: appConfig.responseLLM.websocket_url, // 添加顶级websocket_url
+        websocket_url: appConfig.websocket.url, // 用于数字人动画的WebSocket
         sttTts: {},
       }
 
@@ -119,7 +129,6 @@ export default function DigitalAvatar({
             setStatus(newStatus)
           },
           onMessage: (message) => {
-            console.log(`[${message.role}]: ${message.message}`)
             if (onMessage) {
               onMessage(message)
             }
@@ -504,8 +513,6 @@ export default function DigitalAvatar({
             }
           }}
         />
-
-
 
         {/* 视频加载失败时的后备显示 */}
         {videoError && (

@@ -8,25 +8,25 @@ const appConfig = {
     reconnectDelay: 1000,
   },
 
-  // Response LLM配置 (使用我们自己的大模型)
+  // Response LLM配置 (使用 SiliconFlow API)
   responseLLM: {
-    // 远程大模型服务器配置 (从环境变量读取)
-    websocket_url: process.env.LLM_SERVER_URL || 'ws://192.168.18.138:8000',
-    timeout: 60000, // 增加超时时间以应对网络延迟
-    model: 'Qwen2.5-1.5B-Instruct',
-    max_tokens: 512,
-    // 网络配置
-    reconnectAttempts: 3,
-    reconnectDelay: 3000,
-    heartbeatInterval: 30000, // 心跳检测间隔
+    // SiliconFlow API 配置
+    provider: 'siliconflow',
+    api_url: 'https://api.siliconflow.cn/v1/chat/completions',
+    api_key: 'sk-wubypvpiulffcyilourqxgbideordblirkoceywfjdowbfji', // 临时直接使用 API key 进行测试
+    model: 'Qwen/Qwen2.5-7B-Instruct', // 更换为7B小模型，响应更快
+    max_tokens: 2048, // 降低token限制，加快响应
+    timeout: 30000, // 缩短超时时间到30秒
 
-    // 备用服务器配置（可选）
-    fallbackServers: [
-      process.env.LLM_SERVER_BACKUP_1 || 'ws://localhost:8000', // 备用1
-      process.env.LLM_SERVER_BACKUP_2 || 'ws://127.0.0.1:8000', // 备用2
-      'ws://10.91.225.137:8000', // 之前的IP作为备用
-      'ws://192.168.43.119:8000', // 同网段其他设备
-    ],
+    // 请求参数 - 针对语音交互优化
+    temperature: 0.7, // 降低随机性，提高响应速度
+    top_p: 0.9, // 稍微提高，保持回答质量
+    top_k: 40, // 降低候选数量
+    frequency_penalty: 1.0, // 降低惩罚，减少计算
+    presence_penalty: 0.3, // 降低惩罚，减少计算
+    enable_thinking: false,
+    thinking_budget: 4096,
+    min_p: 0.05,
   },
 
   // 嘎巴龙数字人个性配置
@@ -82,9 +82,21 @@ const appConfig = {
     const errors = []
     const warnings = []
 
-    // 检查Qwen LLM配置
-    if (!this.responseLLM.websocket_url) {
-      errors.push('缺少LLM服务器地址 - 请设置LLM_SERVER_URL环境变量')
+    // 检查SiliconFlow API配置
+    if (!this.responseLLM.api_key) {
+      errors.push('缺少SiliconFlow LLM API密钥 - 请设置SILICONFLOW_API_KEY环境变量')
+    }
+
+    if (!this.siliconflow.api_key) {
+      warnings.push('SiliconFlow语音服务API密钥未配置，将无法使用STT/TTS功能')
+    } else {
+      // API密钥配置了，检查服务启用状态
+      if (this.siliconflow.stt.enabled) {
+        console.log('✅ SiliconFlow STT服务已启用')
+      }
+      if (this.siliconflow.tts.enabled) {
+        console.log('✅ SiliconFlow TTS服务已启用')
+      }
     }
 
     return {
@@ -97,10 +109,11 @@ const appConfig = {
   // 获取当前环境配置
   getEnvironmentConfig() {
     return {
-      // Qwen LLM配置
-      llmServer: {
-        serverUrl: this.responseLLM.websocket_url,
-        isConfigured: !!this.responseLLM.websocket_url,
+      // SiliconFlow LLM配置
+      llmService: {
+        provider: this.responseLLM.provider,
+        apiUrl: this.responseLLM.api_url,
+        isConfigured: !!this.responseLLM.api_key,
         model: this.responseLLM.model,
         timeout: this.responseLLM.timeout,
         max_tokens: this.responseLLM.max_tokens,
@@ -128,10 +141,39 @@ const appConfig = {
     },
   },
 
+  // SiliconFlow API 配置
+  siliconflow: {
+    api_key: process.env.SILICONFLOW_API_KEY || 'sk-wubypvpiulffcyilourqxgbideordblirkoceywfjdowbfji',
+    base_url: process.env.SILICONFLOW_BASE_URL || 'https://api.siliconflow.cn/v1',
+
+    // STT 配置
+    stt: {
+      enabled: true,
+      endpoint: 'https://api.siliconflow.cn/v1/audio/transcriptions',
+      model: 'FunAudioLLM/SenseVoiceSmall',
+      supported_formats: ['wav', 'mp3', 'm4a', 'flac'],
+      max_file_size: '25MB',
+      languages: ['zh', 'en', 'ja', 'ko'],
+    },
+
+    // TTS 配置
+    tts: {
+      enabled: true,
+      endpoint: 'https://api.siliconflow.cn/v1/audio/speech',
+      model: 'FunAudioLLM/CosyVoice2-0.5B',
+      supported_voices: ['中文女', '中文男', '英文女', '英文男', '日语女', '韩语女', '粤语女', '四川话女'],
+      pricing: {
+        unit: 'per_million_utf8_bytes',
+        price: 105,
+        currency: 'CNY',
+      },
+    },
+  },
+
   // STT/TTS服务配置 - Kokoro TTS + SenseVoice-small
   sttTts: {
     provider: 'voice_service', // 使用统一语音服务
-    
+
     // 语音服务配置
     voice_service: {
       enabled: true,
@@ -139,21 +181,49 @@ const appConfig = {
       timeout: 30000,
       reconnectAttempts: 3,
       reconnectDelay: 2000,
-      
-      // TTS配置
+
+      // TTS配置 - SiliconFlow API
       tts: {
-        model: 'kokoro-v0_19',
-        voice_style: 'default', // 可配置声音风格
+        provider: 'SiliconFlow', // 服务提供商
+        model: 'CosyVoice2-0.5B', // 正确的模型名称
+        api_endpoint: 'https://api.siliconflow.cn/v1/audio/speech',
+        voice_style: '中文女', // 默认声音风格
         format: 'wav',
+        sample_rate: 22050, // CosyVoice输出采样率
+        // 通过文本标签控制的语音选项
+        available_speakers: ['中文女', '中文男', '英文女', '英文男', '日语女', '韩语女', '粤语女', '四川话女'],
+        voice_tags: {
+          中文女: '[S1]',
+          中文男: '[S2]',
+          英文女: '[S3]',
+          英文男: '[S4]',
+          日语女: '[S5]',
+          韩语女: '[S6]',
+          粤语女: '[S7]',
+          四川话女: '[S8]',
+        },
+        supports_zero_shot: true, // 支持零样本语音克隆
+        supports_cross_lingual: true, // 支持跨语言合成
+        // 价格信息
+        pricing: {
+          unit: 'per_million_utf8_bytes',
+          price: 105, // ￥105/百万UTF-8字节
+          currency: 'CNY',
+        },
+        // 性能特性
+        performance: {
+          latency: 150, // 150ms低延迟
+          real_time: true,
+        },
       },
-      
+
       // STT配置
       stt: {
         model: 'sensevoice-small',
         language: 'zh',
         enable_itn: true, // 数字规范化
       },
-      
+
     },
   },
 }

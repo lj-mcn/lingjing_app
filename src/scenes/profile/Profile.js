@@ -58,42 +58,42 @@ export default function Profile() {
   const accountDelete = async () => {
     try {
       setSpinner(true)
-      
+
       // Delete user profile from profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
         .eq('id', userData.id)
-      
+
       if (profileError) {
         console.error('Error deleting profile:', profileError)
       }
-      
+
       // Delete push tokens if they exist
       const { error: tokenError } = await supabase
         .from('tokens')
         .delete()
         .eq('id', userData.id)
-      
+
       if (tokenError) {
         console.error('Error deleting tokens:', tokenError)
       }
-      
+
       // Delete user account from Supabase Auth
       const { error: authError } = await supabase.auth.admin.deleteUser(userData.id)
-      
+
       if (authError) {
         console.error('Error deleting user account:', authError)
         setSpinner(false)
         return
       }
-      
+
       // Sign out after successful deletion
       const { error: signOutError } = await supabase.auth.signOut()
       if (signOutError) {
         console.log(signOutError.message)
       }
-      
+
       setSpinner(false)
       console.log('user deleted')
     } catch (error) {

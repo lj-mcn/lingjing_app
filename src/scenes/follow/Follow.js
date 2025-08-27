@@ -62,6 +62,7 @@ export default function Follow() {
             videoStyle={styles.avatarVideo}
             onMessage={handleMessage}
             enableInteraction
+            textOnlyMode
           />
           <Text style={[styles.welcomeText, { color: colorScheme.text }]}>
             你好！我是嘎巴龙 🐉

@@ -6,14 +6,13 @@ const supabaseConfig = {
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhjc2lxd2hzeXdzbG1xdG54dHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0ODcyODQsImV4cCI6MjA3MTA2MzI4NH0.NYaLV27RI9L8YJZpbpJ13NC9lPGRt40SFeZqeXiObqE',
 }
 
-
 const eulaLink = 'https://github.com/kiyohken2000/ReactNative-Expo-Firebase-Boilerplate-v2'
 
 const expoProjectId = '4798bd39-784d-4fd9-aa1b-b70268536555'
 
 export {
-  defaultAvatar, 
+  defaultAvatar,
   supabaseConfig,
-  eulaLink, 
+  eulaLink,
   expoProjectId,
 }

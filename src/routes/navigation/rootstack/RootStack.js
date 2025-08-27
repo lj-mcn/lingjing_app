@@ -47,7 +47,7 @@ export default function RootStack() {
       const token = await Notifications.getExpoPushTokenAsync({
         projectId: expoProjectId,
       })
-      
+
       // Save token to Supabase
       const { error } = await supabase
         .from('tokens')
@@ -55,7 +55,7 @@ export default function RootStack() {
           token: token.data,
           id: userData.id,
         })
-      
+
       if (error) {
         console.error('Error saving push token:', error)
       }
